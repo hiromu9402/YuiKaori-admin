@@ -1,0 +1,19 @@
+[Unit]
+Description=Yuikaori database admin (Django)
+After=network-online.target
+Wants=network-online.target
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+[Service]
+WorkingDirectory=/home/miyazaki/claude/database_yuikaori/admin
+ExecStart=/home/miyazaki/claude/database_yuikaori/admin/.venv/bin/python /home/miyazaki/claude/database_yuikaori/admin/serve.py
+# HTTPS（tailscale serve など）経由で使うときに設定する
+#Environment=YUIKAORI_COOKIE_SECURE=1
+#Environment=YUIKAORI_ALLOWED_HOSTS=127.0.0.1,localhost,<ホスト名>
+#Environment=YUIKAORI_CSRF_TRUSTED_ORIGINS=https://<ホスト名>
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

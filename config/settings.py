@@ -67,9 +67,9 @@ AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = 0.25  # 時間（15分）
 AXES_LOCKOUT_PARAMETERS = ["ip_address", ["username", "user_agent"]]
 AXES_RESET_ON_SUCCESS = True
-# serve.py は 127.0.0.1 だけで待ち受け、プロキシ（tailscale）経由の接続元は X-Forwarded-For で渡される
-AXES_IPWARE_PROXY_COUNT = int(os.environ.get("YUIKAORI_PROXY_COUNT", "0"))
-AXES_IPWARE_META_PRECEDENCE_ORDER = ["HTTP_X_FORWARDED_FOR", "REMOTE_ADDR"]
+# 接続元 IP は REMOTE_ADDR だけを使う。プロキシ経由のときは serve.py（waitress）が
+# 127.0.0.1 からの X-Forwarded-For だけを信頼して REMOTE_ADDR に入れるので、偽装された値は使われない
+AXES_IPWARE_META_PRECEDENCE_ORDER = ["REMOTE_ADDR"]
 
 ROOT_URLCONF = "config.urls"
 
