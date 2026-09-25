@@ -37,7 +37,7 @@ if os.environ.get("YUIKAORI_COOKIE_SECURE") == "1":
     CSRF_COOKIE_SECURE = True
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
+    "catalog.admin_apps.YuikaoriAdminConfig",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",

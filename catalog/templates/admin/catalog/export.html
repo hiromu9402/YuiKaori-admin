@@ -1,0 +1,27 @@
+{% extends "admin/base_site.html" %}
+{% block breadcrumbs %}<div class="breadcrumbs"><a href="{% url 'admin:index' %}">ホーム</a> › 公開ファイルの書き出し</div>{% endblock %}
+{% block content %}
+<div id="content-main">
+  {% if result.errors %}
+    <h2>エラー（{{ result.errors|length }} 件）</h2>
+    <p>エラーがあるうちは書き出せません。直してからもう一度書き出してください。</p>
+    <ul class="errorlist">{% for e in result.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+  {% else %}
+    <p>整合性チェック: エラーはありません。</p>
+  {% endif %}
+  {% if result.warnings %}
+    <details><summary>警告（{{ result.warnings|length }} 件）</summary>
+      <ul>{% for w in result.warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+    </details>
+  {% endif %}
+  {% if result.changed is not None and not result.errors %}
+    <h2>書き出した結果</h2>
+    <p>変更したファイル: {% if result.changed %}{{ result.changed|join:", " }}{% else %}なし{% endif %}</p>
+    {% if result.diffstat %}<p>git の差分（未コミット）:</p><pre>{{ result.diffstat }}</pre>
+    <p>内容を確認したら、公開リポジトリでコミットしてください。</p>{% endif %}
+  {% endif %}
+  <form method="post">{% csrf_token %}
+    <input type="submit" class="default" value="整合性をチェックして書き出す">
+  </form>
+</div>
+{% endblock %}

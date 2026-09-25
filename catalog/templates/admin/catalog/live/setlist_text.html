@@ -1,0 +1,45 @@
+{% extends "admin/base_site.html" %}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">ホーム</a> ›
+  <a href="{% url 'admin:catalog_live_changelist' %}">公演</a> ›
+  <a href="{% url 'admin:catalog_live_change' live.pk %}">{{ live }}</a> › セットリストの一括入力
+</div>
+{% endblock %}
+{% block content %}
+<div id="content-main">
+  {% if error %}<p class="errornote">{{ error }}</p>{% endif %}
+  <form method="post">{% csrf_token %}
+    {% if unknown %}
+      <input type="hidden" name="step" value="resolve">
+      <h2>登録されていない曲名があります</h2>
+      <p>それぞれの扱いを選んで「保存する」を押してください。別表記として登録すると、次からは同じ書き方で入力できます。</p>
+      <datalist id="song-titles">{% for t in song_titles %}<option value="{{ t }}">{% endfor %}</datalist>
+      <table>
+        <thead><tr><th>入力した曲名</th><th>扱い</th></tr></thead>
+        <tbody>
+        {% for u in unknown %}
+          <tr>
+            <td><strong>{{ u.title }}</strong><input type="hidden" name="title_{{ forloop.counter0 }}" value="{{ u.title }}"></td>
+            <td>
+              {% for c in u.candidates %}
+                <label><input type="radio" name="choice_{{ forloop.parentloop.counter0 }}" value="alias:{{ c.pk }}"{% if forloop.first %} checked{% endif %}>
+                  「{{ c.title }}」の別表記として登録</label><br>
+              {% endfor %}
+              <label><input type="radio" name="choice_{{ forloop.counter0 }}" value="existing">
+                次の曲の別表記として登録: <input type="text" name="target_{{ forloop.counter0 }}" list="song-titles" size="40"></label><br>
+              <label><input type="radio" name="choice_{{ forloop.counter0 }}" value="new"{% if not u.candidates %} checked{% endif %}>
+                新しい曲として登録（楽曲一覧には載せない。カバー曲など）</label>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+    <h2>セットリスト</h2>
+    <p>1行に1曲。メドレーは <code>[メドレー] 曲A / 曲B / 曲C</code>、区分は <code>== アンコール</code> や <code>== Wアンコール</code> の行で切り替えます。保存すると、この公演の今のセットリストは置き換わります。</p>
+    <textarea name="text" rows="30" cols="80" style="font-size: 14px;">{{ text }}</textarea>
+    <div class="submit-row"><input type="submit" class="default" value="保存する"></div>
+  </form>
+</div>
+{% endblock %}
