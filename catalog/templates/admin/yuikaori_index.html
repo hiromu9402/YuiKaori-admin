@@ -4,7 +4,7 @@
   <h2 style="margin: -10px -15px 10px; padding: 8px 15px;">公開ファイル</h2>
   <p>データを変更したら、公開用の JSON（song.json・setlist.json など）に書き出してください。書き出す前に整合性をチェックします。</p>
   <p><a class="button" href="{% url 'admin:export' %}">公開ファイルの書き出しへ</a></p>
-  <p style="color: var(--body-quiet-color);">公演の追加：「公演」→「公演を追加」で開催日・公演名などを入れて保存すると、セットリストの一括入力に進みます。</p>
+  <p style="color: var(--body-quiet-color);">公演の追加：「公演」→「公演を追加」で開催日・公演名などを入れて保存すると、セットリストの一括入力に進みます（「対応するイベントも作る」がオンなら、イベントも一緒に作ります）。</p>
 </div>
 {{ block.super }}
 {% endblock %}

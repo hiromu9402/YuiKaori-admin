@@ -111,6 +111,27 @@ class LiveAddTests(AdminTestCase):
         # 日付がいちばん新しいので、書き出しの先頭に来る
         self.assertEqual(m.Live.objects.order_by("sort").first(), live)
 
+    def test_create_event_checkbox(self):
+        before = m.Event.objects.count()
+        self.add_live(create_event="on")
+        live = m.Live.objects.get(title="テスト公演")
+        event = live.events.get()
+        self.assertEqual(m.Event.objects.count(), before + 1)
+        self.assertEqual((event.date, event.title, event.venue), (live.date, "テスト公演", "テスト会場"))
+        self.assertEqual([a.name for a in event.artists.all()], ["小倉唯"])
+        # 日付がいちばん新しいので、イベントも書き出しの先頭に来る
+        self.assertEqual(m.Event.objects.order_by("sort").first(), event)
+
+    def test_no_event_when_unchecked(self):
+        before = m.Event.objects.count()
+        self.add_live()
+        self.assertEqual(m.Event.objects.count(), before)
+
+    def test_checkbox_only_on_add_form(self):
+        self.assertContains(self.client.get(reverse("admin:catalog_live_add")), 'name="create_event"')
+        self.assertNotContains(self.client.get(reverse("admin:catalog_live_change", args=["2025112401"])),
+                               'name="create_event"')
+
     def test_id_must_match_date(self):
         response = self.add_live(id="2030010201")
         self.assertEqual(response.status_code, 200)

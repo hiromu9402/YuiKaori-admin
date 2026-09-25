@@ -148,6 +148,10 @@ class ChecklistEntryForLiveInline(admin.TabularInline):
 
 
 class LiveForm(forms.ModelForm):
+    create_event = forms.BooleanField(
+        label="対応するイベントも作る", required=False, initial=True,
+        help_text="日付・公演名・会場・出演を引き継いでイベントを作ります。分類や開始時刻はあとでイベントの画面で追記してください。")
+
     class Meta:
         model = m.Live
         fields = "__all__"
@@ -192,6 +196,18 @@ class LiveAdmin(AppendOrderMixin, admin.ModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         # 公演ID は主キーなので、作ったあとは変えない（変えると別の公演になる）
         return ["id"] if obj else []
+
+    def get_fields(self, request, obj=None):
+        fields = super().get_fields(request, obj)
+        # イベントを一緒に作れるのは追加するときだけ
+        return [f for f in fields if f != "create_event"] if obj else fields
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        # 出演者（インライン）を保存したあとで作り、イベントにも引き継ぐ
+        if not change and form.cleaned_data.get("create_event"):
+            event = create_event_for_live(form.instance)
+            messages.info(request, f"イベント「{event.title}」を作りました。")
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
