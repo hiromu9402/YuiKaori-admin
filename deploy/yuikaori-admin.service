@@ -8,6 +8,8 @@ StartLimitIntervalSec=60
 [Service]
 WorkingDirectory=/home/miyazaki/claude/database_yuikaori/admin
 ExecStart=/home/miyazaki/claude/database_yuikaori/admin/.venv/bin/python /home/miyazaki/claude/database_yuikaori/admin/serve.py
+# DB と秘密鍵はリポジトリの外に置く（リポジトリのディレクトリは公開サイトとして配信されることがあるため）
+Environment=YUIKAORI_DATA_DIR=/home/miyazaki/.local/share/yuikaori-admin
 # HTTPS（tailscale serve など）経由で使うときに設定する
 #Environment=YUIKAORI_COOKIE_SECURE=1
 #Environment=YUIKAORI_ALLOWED_HOSTS=127.0.0.1,localhost,<ホスト名>

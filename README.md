@@ -5,8 +5,11 @@
 
 ## セットアップ
 
+リポジトリのディレクトリは公開サイトとしてそのまま配信されることがあるので、DB と秘密鍵はリポジトリの外に置きます（`YUIKAORI_DATA_DIR`）。
+
 ```bash
 cd admin
+export YUIKAORI_DATA_DIR=~/.local/share/yuikaori-admin   # manage.py を使うときは毎回設定する
 uv venv .venv
 uv pip install --python .venv/bin/python -r requirements.txt
 .venv/bin/python manage.py migrate
@@ -50,7 +53,7 @@ systemctl --user enable --now yuikaori-admin
 
 ## データ
 
-`admin/data/` に保存されます（Git の管理対象外）。保存先は環境変数 `YUIKAORI_DATA_DIR` で、書き出し先は `YUIKAORI_SITE_DIR` で変えられます。
+環境変数 `YUIKAORI_DATA_DIR` のディレクトリに保存されます（本番は `~/.local/share/yuikaori-admin`。設定しないと `admin/data/` で、これは開発用です）。書き出し先は `YUIKAORI_SITE_DIR` で変えられます（既定はリポジトリの直下）。
 
 | ファイル | 内容 |
 |---|---|
