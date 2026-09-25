@@ -115,12 +115,14 @@ def export_events():
 
 
 def export_tours():
-    """tour.html の選択肢: [{"group": アーティスト名, "tours": [ツアー名, ...]}, ...]"""
-    groups = {}
+    """tour.html の選択肢: {"groups": [{"group": アーティスト名, "tours": [ツアー名, ...]}, ...], "default": 初期選択}"""
+    groups, default = {}, None
     for t in (m.Tour.objects.filter(compare_artist__isnull=False).select_related("compare_artist")
               .order_by("compare_artist__sort", "compare_sort", "title")):
         groups.setdefault(t.compare_artist.name, []).append(t.title)
-    return [{"group": g, "tours": ts} for g, ts in groups.items()]
+        if t.compare_default and default is None:
+            default = t.title
+    return {"groups": [{"group": g, "tours": ts} for g, ts in groups.items()], "default": default}
 
 
 def export_checklist():

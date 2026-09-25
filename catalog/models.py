@@ -107,6 +107,7 @@ class Tour(models.Model):
         Artist, on_delete=models.PROTECT, null=True, blank=True, verbose_name="比較ページのグループ",
         help_text="設定するとツアーセットリスト比較ページ（tour.html）の選択肢に、このアーティストのグループで表示する")
     compare_sort = models.IntegerField("比較ページでの並び順", default=0)
+    compare_default = models.BooleanField("比較ページで最初に選ばれている", default=False)
 
     class Meta:
         ordering = ["title"]

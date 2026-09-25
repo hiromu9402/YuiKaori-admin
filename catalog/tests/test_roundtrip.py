@@ -49,9 +49,12 @@ class RoundTripTests(LegacyDataTestCase):
     def test_tour_options_match_legacy_html(self):
         from catalog.importer import parse_legacy_tour_html
         from .helpers import LEGACY_DIR
-        legacy = parse_legacy_tour_html((LEGACY_DIR / "tour.html").read_text(encoding="utf-8"))
-        exported = [(g["group"], t) for g in self.exported["tours.json"] for t in g["tours"]]
+        legacy, default = parse_legacy_tour_html((LEGACY_DIR / "tour.html").read_text(encoding="utf-8"))
+        exported = [(g["group"], t) for g in self.exported["tours.json"]["groups"] for t in g["tours"]]
+        self.assertEqual(len(legacy), 50)
         self.assertEqual(exported, legacy)
+        self.assertEqual(default, "小倉唯 LIVE TOUR 2019「Step Apple」")
+        self.assertEqual(self.exported["tours.json"]["default"], default)
 
     def test_checklist_matches_legacy_html(self):
         from catalog.importer import LEGACY_CHECKLIST_PAGES, parse_legacy_checklist_html

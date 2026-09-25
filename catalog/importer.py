@@ -38,16 +38,18 @@ def parse_ja_date(s):
 
 
 def parse_legacy_tour_html(text):
-    """tour.html の <select id="tourSelect"> から [(グループ名, ツアー名), ...] を取り出す。"""
+    """tour.html の <select id="tourSelect"> から ([(グループ名, ツアー名), ...], 初期選択のツアー名) を取り出す。"""
     sel = text[text.index('<select id="tourSelect"'):]
     sel = sel[:sel.index("</select>")]
-    out, group = [], None
-    for g in re.finditer(r'<optgroup label="([^"]*)"|<option value="([^"]+)">', sel):
+    out, group, default = [], None, None
+    for g in re.finditer(r'<optgroup label="([^"]*)"|<option value="([^"]+)"([^>]*)>', sel):
         if g.group(1) is not None:
             group = html.unescape(g.group(1))
         else:
             out.append((group, clean(html.unescape(g.group(2)))))
-    return out
+            if re.search(r"\bselected\b", g.group(3)):
+                default = out[-1][1]
+    return out, default
 
 
 def parse_legacy_checklist_html(text):
@@ -163,9 +165,11 @@ def import_site(site_dir):
 
     # ツアー比較ページの選択肢
     if (site_dir / "tours.json").exists():
-        compare = [(g["group"], t) for g in load_json(site_dir, "tours.json") for t in g["tours"]]
+        tours_json = load_json(site_dir, "tours.json")
+        compare = [(g["group"], t) for g in tours_json["groups"] for t in g["tours"]]
+        default = tours_json.get("default")
     else:
-        compare = parse_legacy_tour_html((site_dir / "tour.html").read_text(encoding="utf-8"))
+        compare, default = parse_legacy_tour_html((site_dir / "tour.html").read_text(encoding="utf-8"))
     for i, (group, title) in enumerate(compare):
         tour = tours.get(title)
         if tour is None:
@@ -173,6 +177,7 @@ def import_site(site_dir):
             continue
         tour.compare_artist = artists[group]
         tour.compare_sort = i * SORT_STEP
+        tour.compare_default = title == default
         tour.save()
 
     # 未回収楽曲チェック
