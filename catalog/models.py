@@ -129,6 +129,20 @@ class Live(models.Model):
     artists = models.ManyToManyField(Artist, through="LiveArtist", verbose_name="出演")
     sort = models.IntegerField("並び順", default=0)
 
+    # セットリストを Web の情報と照合した記録（公開用の JSON には書き出さない）
+    VERIFY_CHOICES = [
+        ("", "未確認"),
+        ("ok", "一致"),
+        ("fixed", "修正済み"),
+        ("partial", "一部のみ確認"),
+        ("doubt", "要確認"),
+        ("notfound", "情報なし"),
+    ]
+    verify_status = models.CharField("照合の状態", max_length=10, choices=VERIFY_CHOICES, blank=True, default="")
+    verify_date = models.DateField("照合日", null=True, blank=True)
+    verify_source = models.TextField("照合の出典", blank=True, help_text="URL や資料名を 1 行に 1 つ")
+    verify_note = models.TextField("照合のメモ", blank=True)
+
     class Meta:
         ordering = ["sort", "id"]
         verbose_name = verbose_name_plural = "公演"

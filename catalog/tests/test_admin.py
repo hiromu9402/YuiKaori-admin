@@ -91,6 +91,24 @@ class SmokeTests(AdminTestCase):
         self.assertIn("Honey♥Come!!", [r["text"] for r in results])
 
 
+class VerifyRecordTests(AdminTestCase):
+    def test_edit_and_filter(self):
+        live = m.Live.objects.get(id="2025112401")
+        live.verify_status, live.verify_source = "ok", "https://example.com/setlist"
+        live.save()
+        url = reverse("admin:catalog_live_changelist")
+        self.assertContains(self.client.get(url + "?verify_status__exact=ok"), "2025112401")
+        self.assertNotContains(self.client.get(url + "?verify_status__exact=doubt"), "2025112401")
+        self.assertContains(self.client.get(url + "?q=example.com"), "2025112401")
+
+    def test_not_exported(self):
+        from catalog.exporter import build_all
+        live = m.Live.objects.get(id="2025112401")
+        live.verify_status, live.verify_note = "fixed", "照合メモ"
+        live.save()
+        self.assertNotIn("照合メモ", json.dumps(build_all(), ensure_ascii=False))
+
+
 class LiveAddTests(AdminTestCase):
     def add_live(self, **extra):
         data = {

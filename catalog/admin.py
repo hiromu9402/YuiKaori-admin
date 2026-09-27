@@ -176,9 +176,9 @@ class LiveForm(forms.ModelForm):
 @admin.register(m.Live)
 class LiveAdmin(AppendOrderMixin, admin.ModelAdmin):
     form = LiveForm
-    list_display = ["id", "date", "title", "tour", "venue", "songs"]
-    list_filter = ["artists"]
-    search_fields = ["id", "title", "venue", "tour__title"]
+    list_display = ["id", "date", "title", "tour", "venue", "songs", "verify_status"]
+    list_filter = ["artists", "verify_status"]
+    search_fields = ["id", "title", "venue", "tour__title", "verify_source", "verify_note"]
     date_hierarchy = "date"
     autocomplete_fields = ["tour"]
     inlines = [LiveArtistInline, SetlistItemInline, ChecklistEntryForLiveInline]
