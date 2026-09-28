@@ -34,7 +34,7 @@ async function stableRows(doc, selector) {
 
 const probes = {
   async index() {
-    const w = await openPage('index.html');
+    const w = await openPage('songs.html');  // 楽曲一覧（トップページは index.html）
     const out = {};
     for (const tab of ['yui', 'kaori', 'yuikaori']) {
       w.updateSongDetails(tab);

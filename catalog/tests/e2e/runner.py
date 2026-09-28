@@ -24,8 +24,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO_DIR = HERE.parents[3]  # admin/catalog/tests/e2e → リポジトリの直下
 EXPECTED_FILE = HERE.parent / "fixtures" / "expected" / "frontend.json"
-PAGES = ["index.html", "tour.html", "my.html", "my_c.html", "my_f.html", "calendar.html", "event.html",
-         "common.js", "sub/setlist.html", "sub/search.html"]
+PAGES = ["index.html", "songs.html", "tour.html", "my.html", "my_c.html", "my_f.html", "calendar.html", "event.html",
+         "common.js", "common.css", "table-zoom.js", "site.js", "sub/setlist.html", "sub/search.html"]
 PROBES = [("index", None), ("tour", None), ("checklist", "my.html"), ("checklist", "my_c.html"),
           ("checklist", "my_f.html"), ("calendar", None), ("event", None), ("sub", None)]
 
