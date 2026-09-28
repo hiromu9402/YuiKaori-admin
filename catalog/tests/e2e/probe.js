@@ -96,11 +96,15 @@ const probes = {
   },
 
   async calendar() {
+    // 出演・種類をすべて選び、出来事のない日も表示して、全日付と全イベントが出ることを確かめる
     const w = await openPage('calendar.html');
-    await stableRows(w.document, '#eventsTable tbody tr');
+    const doc = w.document;
+    await waitFor(() => doc.querySelectorAll('#list .cal-day').length);
+    doc.querySelectorAll('.cal-controls input[type="checkbox"]').forEach(cb => { cb.checked = true; });
+    doc.getElementById('showEmpty').dispatchEvent(new Event('change'));
     await sleep(500);
-    return { rows: w.document.querySelectorAll('#eventsTable tbody tr').length,
-             events: w.document.querySelectorAll('#eventsTable tbody span').length };
+    return { rows: doc.querySelectorAll('#list .cal-day').length,
+             events: doc.querySelectorAll('#list .cal-ev').length };
   },
 
   async event() {
