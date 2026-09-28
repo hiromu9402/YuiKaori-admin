@@ -73,3 +73,9 @@ tests/run_all.sh e2e      # 公開ページの回帰テスト（headless Chromiu
 
 - `catalog/tests/fixtures/legacy/` には、DB 化する前の公開ファイルを保存しています。取り込み→書き出しの往復で、これと中身が一致することを確かめます。
 - `catalog/tests/fixtures/expected/frontend.json` は、DB 化する前の公開ページの表示結果（披露回数・未回収数・比較表など）です。書き出した JSON と今の HTML で同じ結果になることを、headless Chromium で確かめます。
+
+## 公開サイトの配信
+
+公開サイトは `admin/deploy/serve_site.py` で配信する（127.0.0.1:8765）。リポジトリ直下の `.html` / `.css` / `.js` / `.json` と `sub/` のページだけを返し、`.git/`、`admin/`、`HANDOFF.md` などは 404 にする許可リスト方式。`python3 -m http.server` でリポジトリをそのまま配信すると、これらのファイルも外から見えてしまうので使わない。
+
+    python3 admin/deploy/serve_site.py            # 127.0.0.1:8765
