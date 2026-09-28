@@ -120,9 +120,9 @@ const probes = {
     const out = {};
     for (const id of ['2025112401', '2022061901', '2025051701', '2016031201']) {
       const w = await openPage(`sub/setlist.html?id=${id}`);
-      await waitFor(() => w.document.querySelectorAll('#liveInfo p').length > 1);
+      await waitFor(() => w.document.querySelectorAll('#liveInfo .song').length);
       await sleep(200);
-      out[`setlist:${id}`] = w.document.getElementById('liveInfo').innerText.trim().split('\n').length;
+      out[`setlist:${id}`] = w.document.querySelectorAll('#liveInfo .song').length;  // 曲数（メドレーの曲も1曲ずつ）
     }
     for (const name of ['Raise', 'CUE the Future　～「Q」のテーマ～', 'Honey♥Come!!', 'winter tale']) {
       const w = await openPage(`sub/search.html?name=${encodeURIComponent(name)}`);
