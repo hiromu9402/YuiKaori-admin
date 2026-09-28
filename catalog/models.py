@@ -134,9 +134,9 @@ class Live(models.Model):
         ("", "未確認"),
         ("ok", "一致"),
         ("fixed", "修正済み"),
-        ("partial", "一部のみ確認"),
+        ("partial", "一部のみ照合"),
         ("doubt", "要確認"),
-        ("notfound", "情報なし"),
+        ("notfound", "未照合（情報源なし）"),
     ]
     verify_status = models.CharField("照合の状態", max_length=10, choices=VERIFY_CHOICES, blank=True, default="")
     verify_date = models.DateField("照合日", null=True, blank=True)
