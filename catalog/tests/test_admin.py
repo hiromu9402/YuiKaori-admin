@@ -70,7 +70,7 @@ class SmokeTests(AdminTestCase):
         for model, obj in [(m.Artist, m.Artist.objects.first()), (m.CD, m.CD.objects.first()),
                            (m.Song, m.Song.objects.first()), (m.SongAlias, None), (m.Tour, m.Tour.objects.first()),
                            (m.Live, m.Live.objects.first()), (m.Event, m.Event.objects.first()),
-                           (m.ChecklistGroup, m.ChecklistGroup.objects.first())]:
+                           (m.ChecklistGroup, m.ChecklistGroup.objects.first()), (m.Task, None)]:
             name = model._meta.model_name
             pages += [reverse(f"admin:catalog_{name}_changelist"), reverse(f"admin:catalog_{name}_add"),
                       reverse(f"admin:catalog_{name}_changelist") + "?q=Raise"]
@@ -89,6 +89,16 @@ class SmokeTests(AdminTestCase):
         url = reverse("admin:autocomplete") + "?app_label=catalog&model_name=setlistitem&field_name=song&term=Honey"
         results = self.client.get(url).json()["results"]
         self.assertIn("Honey♥Come!!", [r["text"] for r in results])
+
+
+class TaskTests(AdminTestCase):
+    def test_list_edit_and_not_exported(self):
+        from catalog.exporter import build_all
+        task = m.Task.objects.create(title="テストのタスク", detail="メモの本文", category="ops")
+        url = reverse("admin:catalog_task_changelist")
+        self.assertContains(self.client.get(url + "?status__exact=todo"), "テストのタスク")
+        self.assertContains(self.client.get(reverse("admin:catalog_task_change", args=[task.pk])), "メモの本文")
+        self.assertNotIn("テストのタスク", json.dumps(build_all(), ensure_ascii=False))
 
 
 class VerifyRecordTests(AdminTestCase):

@@ -351,3 +351,21 @@ class ChecklistGroupAdmin(AppendOrderMixin, admin.ModelAdmin):
             if current is not None:
                 obj.sort = current - SORT_STEP
         super().save_model(request, obj, form, change)
+
+
+# ---- タスク（作業メモ） ----
+
+@admin.register(m.Task)
+class TaskAdmin(admin.ModelAdmin):
+    list_display = ["title", "category", "status", "priority", "updated"]
+    list_editable = ["status", "priority"]
+    list_filter = ["status", "category", "priority"]
+    search_fields = ["title", "detail"]
+    readonly_fields = ["created", "updated"]
+
+    def get_queryset(self, request):
+        # 完了したものは一覧の下に回す
+        from django.db.models import Case, IntegerField, When
+        return super().get_queryset(request).annotate(
+            done_last=Case(When(status="done", then=1), default=0, output_field=IntegerField())
+        ).order_by("done_last", "priority", "id")

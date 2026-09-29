@@ -253,3 +253,35 @@ class ChecklistEntry(models.Model):
 
     def __str__(self):
         return f"{self.group.heading} / {self.label}"
+
+
+class Task(models.Model):
+    """データや公開サイトについての作業メモ（残っているタスク）。公開用の JSON には書き出さない。"""
+    CATEGORY_CHOICES = [
+        ("data", "データの確認・追加"),
+        ("site", "公開サイト"),
+        ("ops", "運用"),
+        ("other", "その他"),
+    ]
+    STATUS_CHOICES = [
+        ("todo", "未着手"),
+        ("doing", "進行中"),
+        ("waiting", "ユーザーの作業待ち"),
+        ("hold", "保留"),
+        ("done", "完了"),
+    ]
+    PRIORITY_CHOICES = [(1, "高"), (2, "中"), (3, "低")]
+    title = models.CharField("タスク", max_length=200)
+    category = models.CharField("種類", max_length=10, choices=CATEGORY_CHOICES, default="data")
+    status = models.CharField("状態", max_length=10, choices=STATUS_CHOICES, default="todo")
+    priority = models.IntegerField("優先度", choices=PRIORITY_CHOICES, default=2)
+    detail = models.TextField("内容・メモ", blank=True)
+    created = models.DateTimeField("登録日時", auto_now_add=True)
+    updated = models.DateTimeField("更新日時", auto_now=True)
+
+    class Meta:
+        ordering = ["priority", "id"]
+        verbose_name = verbose_name_plural = "タスク"
+
+    def __str__(self):
+        return self.title
