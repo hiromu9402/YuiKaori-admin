@@ -26,8 +26,6 @@ ADMIN_DIR = HERE.parents[2]  # catalog/tests/e2e → このリポジトリの直
 # 公開サイトのリポジトリ（HTML/JS を読む）。settings.SITE_DIR と同じく、既定は隣の database_yuikaori/
 SITE_DIR = Path(os.environ.get("YUIKAORI_SITE_DIR") or ADMIN_DIR.parent / "database_yuikaori")
 EXPECTED_FILE = HERE.parent / "fixtures" / "expected" / "frontend.json"
-PAGES = ["index.html", "songs.html", "tour.html", "my.html", "my_c.html", "my_f.html", "calendar.html", "event.html",
-         "common.js", "common.css", "table-zoom.js", "site.js", "sub/setlist.html", "sub/search.html"]
 PROBES = [("index", None), ("tour", None), ("checklist", "my.html"), ("checklist", "my_c.html"),
           ("checklist", "my_f.html"), ("calendar", None), ("event", None), ("sub", None)]
 
@@ -36,13 +34,34 @@ def chromium_path():
     return os.environ.get("CHROMIUM") or shutil.which("chromium") or shutil.which("chromium-browser")
 
 
+# 公開サイトの許可リスト（公開サイトのリポジトリの tools/site_files.py、catalog/preview.py と同じ）。
+# このファイルは Django なしでも動かす（--baseline）ので、ここに書く
+ALLOWED = [
+    re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9_.-]*\.(html|css|js|json)$"),
+    re.compile(r"^sub/[A-Za-z0-9_-][A-Za-z0-9_.-]*\.html$"),
+]
+
+
+def allowed(relpath):
+    return any(p.match(relpath) for p in ALLOWED)
+
+
+def site_pages(html_dir):
+    """公開サイトの HTML・CSS・JS（許可リストに合うもの。JSON は除く）の相対パス。"""
+    html_dir = Path(html_dir)
+    files = [p for p in html_dir.iterdir() if p.is_file()]
+    if (html_dir / "sub").is_dir():
+        files += [p for p in (html_dir / "sub").iterdir() if p.is_file()]
+    paths = (p.relative_to(html_dir).as_posix() for p in files)
+    return sorted(p for p in paths if allowed(p) and not p.endswith(".json"))
+
+
 def build_site(dest, html_dir=SITE_DIR, json_dir=SITE_DIR):
     dest = Path(dest)
-    for name in PAGES:
-        src = Path(html_dir) / name
-        if src.exists():
-            (dest / name).parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy(src, dest / name)
+    # ページやスクリプトが増えても写し漏れがないよう、決まった一覧ではなく許可リストに合うものをすべて写す
+    for name in site_pages(html_dir):
+        (dest / name).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(Path(html_dir) / name, dest / name)
     for src in Path(json_dir).glob("*.json"):
         shutil.copy(src, dest / src.name)
     shutil.copy(HERE / "probe.js", dest / "__probe.js")
