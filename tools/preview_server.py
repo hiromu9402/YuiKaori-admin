@@ -33,6 +33,9 @@ def copy_data(src_dir, dest_dir):
     with sqlite3.connect(f"file:{src_db}?mode=ro", uri=True, timeout=30) as a, sqlite3.connect(dest_dir / "db.sqlite3") as b:
         a.backup(b)
     (dest_dir / "db.sqlite3").chmod(0o600)
+    # データ更新の候補（check_updates の結果）があれば、トップに出るように写す
+    if (src_dir / "update_report.json").is_file():
+        (dest_dir / "update_report.json").write_bytes((src_dir / "update_report.json").read_bytes())
     if (src_dir / "static").is_dir():
         (dest_dir / "static").symlink_to(src_dir / "static")
 
