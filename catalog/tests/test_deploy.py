@@ -16,7 +16,7 @@ from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.core.wsgi import get_wsgi_application
 from django.test import SimpleTestCase, TestCase, override_settings
-from django.urls import reverse
+from django.urls import reverse, set_script_prefix
 
 from config.prefix import PrefixMiddleware
 
@@ -75,6 +75,10 @@ class UnderPrefixTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         get_user_model().objects.create_superuser("owner", password=PASSWORD)
+
+    def tearDown(self):
+        # WSGI の経路で処理すると、URL の前に付くパス（/example）が残り、後のテストの reverse() がずれるので戻す
+        set_script_prefix("/")
 
     def request(self, path, method="GET", body=b"", cookies=""):
         app = PrefixMiddleware(get_wsgi_application(), "/example")
