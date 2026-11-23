@@ -3,7 +3,20 @@
 <div class="module" style="margin-bottom: 20px; padding: 10px 15px;">
   <h2 style="margin: -10px -15px 10px; padding: 8px 15px;">公開ファイル</h2>
   <p>データを変更したら、公開用の JSON（song.json・setlist.json など）に書き出してください。書き出す前に整合性をチェックします。</p>
-  <p><a class="button" href="{% url 'admin:export' %}">公開ファイルの書き出しへ</a></p>
+  <p><a class="button" href="{% url 'admin:preview' '' %}" target="_blank" rel="noopener">公開前のプレビューを開く</a>
+     <a class="button" href="{% url 'admin:export' %}">公開ファイルの書き出しへ</a></p>
+  <p style="color: var(--body-quiet-color);">プレビューは、DB の今の内容で公開サイトと同じページを開きます（書き出しや公開の前に確かめるためのもの）。</p>
+  {% if site_changes is not None %}
+  {% if site_changes %}
+  <details open>
+    <summary>公開中のサイトとの違い（{% for c in site_changes %}{{ c.name }}{% if not forloop.last %}・{% endif %}{% endfor %}）</summary>
+    {% for c in site_changes %}<p style="margin: 6px 0 0;"><b>{{ c.name }}</b></p>
+    <ul style="margin-top: 2px;">{% for line in c.lines %}<li style="white-space: pre-wrap;">{{ line }}</li>{% endfor %}</ul>{% endfor %}
+  </details>
+  {% else %}
+  <p>公開中のサイトとの違い：ありません（DB の内容は、公開サイトのリポジトリの JSON と同じです）。</p>
+  {% endif %}
+  {% endif %}
   <p style="color: var(--body-quiet-color);">公演の追加：「公演」→「公演を追加」で開催日・公演名などを入れて保存すると、セットリストの一括入力に進みます（「対応するイベントも作る」がオンなら、イベントも一緒に作ります）。</p>
 </div>
 <div class="module" style="margin-bottom: 20px; padding: 10px 15px;">
