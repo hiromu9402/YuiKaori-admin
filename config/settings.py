@@ -31,8 +31,14 @@ def load_secret_key():
 SECRET_KEY = load_secret_key()
 DEBUG = os.environ.get("YUIKAORI_DEBUG") == "1"
 ALLOWED_HOSTS = [h for h in os.environ.get("YUIKAORI_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",") if h]
-# tailscale serve などの HTTPS 経由で使うときは、そのオリジンを指定する（例: https://pi.tailnet.ts.net）
+# HTTPS のリバースプロキシ経由で使うときは、そのオリジンを指定する（例: https://admin.example.com）
 CSRF_TRUSTED_ORIGINS = [o for o in os.environ.get("YUIKAORI_CSRF_TRUSTED_ORIGINS", "").split(",") if o]
+# リバースプロキシで、同じアドレスをほかのアプリとパスで分け合うことがあるので、
+# Cookie は管理画面専用の名前にし、管理画面のパスの下だけで送られるようにする
+SESSION_COOKIE_NAME = "yuikaori_sessionid"
+CSRF_COOKIE_NAME = "yuikaori_csrftoken"
+URL_PREFIX = "/" + os.environ.get("YUIKAORI_URL_PREFIX", "").strip("/")
+SESSION_COOKIE_PATH = CSRF_COOKIE_PATH = URL_PREFIX.rstrip("/") + "/"
 if os.environ.get("YUIKAORI_COOKIE_SECURE") == "1":
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -110,7 +116,8 @@ TIME_ZONE = "Asia/Tokyo"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+# パスの下で動かすときも CSS/JS の URL にパスが付くよう、絶対パスで指定する
+STATIC_URL = URL_PREFIX.rstrip("/") + "/static/"
 STATIC_ROOT = DATA_DIR / "static"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

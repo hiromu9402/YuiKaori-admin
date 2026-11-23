@@ -6,14 +6,17 @@ StartLimitBurst=5
 StartLimitIntervalSec=60
 
 [Service]
-WorkingDirectory=/home/miyazaki/claude/database_yuikaori/admin
-ExecStart=/home/miyazaki/claude/database_yuikaori/admin/.venv/bin/python /home/miyazaki/claude/database_yuikaori/admin/serve.py
+# %h はホームディレクトリ。リポジトリを ~/claude/database_yuikaori 以外に置いたときは書き換える
+WorkingDirectory=%h/claude/database_yuikaori/admin
+ExecStart=%h/claude/database_yuikaori/admin/.venv/bin/python %h/claude/database_yuikaori/admin/serve.py
 # DB と秘密鍵はリポジトリの外に置く（リポジトリのディレクトリは公開サイトとして配信されることがあるため）
-Environment=YUIKAORI_DATA_DIR=/home/miyazaki/.local/share/yuikaori-admin
-# HTTPS（tailscale serve など）経由で使うときに設定する
+Environment=YUIKAORI_DATA_DIR=%h/.local/share/yuikaori-admin
+# HTTPS のリバースプロキシ経由で使うときに設定する（実際の値はリポジトリに書かず、systemd の drop-in で渡す）。
+# パスの下で使うときは YUIKAORI_URL_PREFIX も指定する
+#Environment=YUIKAORI_URL_PREFIX=/<パス>
 #Environment=YUIKAORI_COOKIE_SECURE=1
 #Environment=YUIKAORI_ALLOWED_HOSTS=127.0.0.1,localhost,<ホスト名>
-#Environment=YUIKAORI_CSRF_TRUSTED_ORIGINS=https://<ホスト名>
+#Environment=YUIKAORI_CSRF_TRUSTED_ORIGINS=https://<ホスト名>[:<ポート>]
 Restart=always
 RestartSec=5
 
