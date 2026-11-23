@@ -1,6 +1,7 @@
 {% extends "admin/base_site.html" %}
 {% block breadcrumbs %}<div class="breadcrumbs"><a href="{% url 'admin:index' %}">ホーム</a> › 公開ファイルの書き出し</div>{% endblock %}
 {% block content %}
+<style>.yk-buttons { display: flex; flex-wrap: wrap; gap: 6px; } .yk-buttons .button { white-space: nowrap; line-height: 1.6; }</style>
 <div id="content-main">
   {% if result.errors %}
     <h2>エラー（{{ result.errors|length }} 件）</h2>
@@ -21,7 +22,8 @@
     <p>内容を確認したら、公開リポジトリでコミットしてください。</p>{% endif %}
   {% endif %}
   <h2>公開前の確認</h2>
-  <p><a class="button" href="{% url 'admin:preview' '' %}" target="_blank" rel="noopener">公開前のプレビューを開く</a></p>
+  <p class="yk-buttons"><a class="button" href="{% url 'admin:preview' '' %}" target="_blank" rel="noopener">公開前のプレビューを開く</a>
+     {% if dev_preview %}<a class="button" href="{% url 'admin:preview' 'dev/' %}" target="_blank" rel="noopener">作業中のブランチ（{{ dev_preview.branch }}）のプレビュー</a>{% endif %}</p>
   {% if site_changes is not None %}
   {% if site_changes %}
   <details open>

@@ -1,11 +1,13 @@
 {% extends "admin/index.html" %}
 {% block content %}
+<style>.yk-buttons { display: flex; flex-wrap: wrap; gap: 6px; } .yk-buttons .button { white-space: nowrap; line-height: 1.6; }</style>
 <div class="module" style="margin-bottom: 20px; padding: 10px 15px;">
   <h2 style="margin: -10px -15px 10px; padding: 8px 15px;">公開ファイル</h2>
   <p>データを変更したら、公開用の JSON（song.json・setlist.json など）に書き出してください。書き出す前に整合性をチェックします。</p>
-  <p><a class="button" href="{% url 'admin:preview' '' %}" target="_blank" rel="noopener">公開前のプレビューを開く</a>
+  <p class="yk-buttons"><a class="button" href="{% url 'admin:preview' '' %}" target="_blank" rel="noopener">公開前のプレビューを開く</a>
+     {% if dev_preview %}<a class="button" href="{% url 'admin:preview' 'dev/' %}" target="_blank" rel="noopener">作業中のブランチ（{{ dev_preview.branch }}）のプレビュー</a>{% endif %}
      <a class="button" href="{% url 'admin:export' %}">公開ファイルの書き出しへ</a></p>
-  <p style="color: var(--body-quiet-color);">プレビューは、DB の今の内容で公開サイトと同じページを開きます（書き出しや公開の前に確かめるためのもの）。</p>
+  <p style="color: var(--body-quiet-color);">プレビューは、DB の今の内容で公開サイトと同じページを開きます（書き出しや公開の前に確かめるためのもの）。{% if dev_preview %}「作業中のブランチ」は、マージ前のページの変更（PR）も含めて表示します。{% endif %}</p>
   {% if site_changes is not None %}
   {% if site_changes %}
   <details open>

@@ -14,6 +14,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = Path(os.environ.get("YUIKAORI_DATA_DIR") or BASE_DIR.parent / "database_yuikaori-data")
 # 公開サイトのリポジトリ（song.json などを書き出す場所）。既定は隣の database_yuikaori/
 SITE_DIR = Path(os.environ.get("YUIKAORI_SITE_DIR") or BASE_DIR.parent / "database_yuikaori")
+# 公開前のプレビューで「作業中のブランチ」として表示する、公開サイトの作業用フォルダー（PR のブランチの worktree）。
+# ないときは、プレビューに切り替えを出さない
+PREVIEW_DEV_DIR = Path(os.environ.get("YUIKAORI_PREVIEW_DEV_DIR") or SITE_DIR.parent / f"{SITE_DIR.name}-dev")
 
 
 def load_secret_key():
