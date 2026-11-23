@@ -100,6 +100,26 @@ class TaskTests(AdminTestCase):
         self.assertContains(self.client.get(reverse("admin:catalog_task_change", args=[task.pk])), "メモの本文")
         self.assertNotIn("テストのタスク", json.dumps(build_all(), ensure_ascii=False))
 
+    def test_done_tasks_are_hidden_by_default(self):
+        m.Task.objects.create(title="まだのタスク", status="todo")
+        m.Task.objects.create(title="終わったタスク", status="done")
+        url = reverse("admin:catalog_task_changelist")
+        cases = {
+            "": (["まだのタスク"], ["終わったタスク"]),                  # 最初の表示は未完了だけ
+            "?show=done": (["終わったタスク"], ["まだのタスク"]),
+            "?show=all": (["まだのタスク", "終わったタスク"], []),
+            "?status__exact=done": (["終わったタスク"], ["まだのタスク"]),  # 状態で選んだときはそちらに従う
+            "?status__exact=todo": (["まだのタスク"], ["終わったタスク"]),
+        }
+        for query, (shown, hidden) in cases.items():
+            with self.subTest(query=query):
+                response = self.client.get(url + query)
+                for title in shown:
+                    self.assertContains(response, title)
+                for title in hidden:
+                    self.assertNotContains(response, title)
+        self.assertContains(self.client.get(url), "未完了（最初の表示）")
+
 
 class VerifyRecordTests(AdminTestCase):
     def test_edit_and_filter(self):

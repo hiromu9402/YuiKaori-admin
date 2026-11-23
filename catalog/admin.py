@@ -355,11 +355,38 @@ class ChecklistGroupAdmin(AppendOrderMixin, admin.ModelAdmin):
 
 # ---- タスク（作業メモ） ----
 
+class TaskVisibilityFilter(admin.SimpleListFilter):
+    """一覧を開いたときは完了したタスクを出さない。「完了のみ」「すべて」に切り替えられる。"""
+    title = "表示"
+    parameter_name = "show"
+
+    def lookups(self, request, model_admin):
+        return [("done", "完了のみ"), ("all", "すべて")]
+
+    def choices(self, changelist):
+        # 何も選んでいないとき（最初の表示）を「未完了」として出す
+        yield {"selected": self.value() is None,
+               "query_string": changelist.get_query_string(remove=[self.parameter_name]),
+               "display": "未完了（最初の表示）"}
+        for lookup, title in self.lookup_choices:
+            yield {"selected": self.value() == lookup,
+                   "query_string": changelist.get_query_string({self.parameter_name: lookup}),
+                   "display": title}
+
+    def queryset(self, request, queryset):
+        if self.value() == "done":
+            return queryset.filter(status="done")
+        if self.value() == "all" or request.GET.get("status__exact"):
+            # 「状態」の絞り込みで選んだときは、そちらに従う（「完了」を選んで何も出ないことがないように）
+            return queryset
+        return queryset.exclude(status="done")
+
+
 @admin.register(m.Task)
 class TaskAdmin(admin.ModelAdmin):
     list_display = ["title", "category", "status", "priority", "updated"]
     list_editable = ["status", "priority"]
-    list_filter = ["status", "category", "priority"]
+    list_filter = [TaskVisibilityFilter, "status", "category", "priority"]
     search_fields = ["title", "detail"]
     readonly_fields = ["created", "updated"]
 
