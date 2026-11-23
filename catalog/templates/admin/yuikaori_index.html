@@ -24,13 +24,13 @@
 <div class="module" style="margin-bottom: 20px; padding: 10px 15px;">
   <h2 style="margin: -10px -15px 10px; padding: 8px 15px;">データ更新の候補</h2>
   {% if update_report %}
-  <p>{{ update_report.today }} に集めた候補です（毎月 1 日に更新。<code>manage.py check_updates</code>）。</p>
+  <p>{{ update_report.today }} に集めた候補です（毎週月曜に更新。<code>manage.py check_updates</code>）。{% if update_report.new_count %}<b style="color: var(--error-fg);">新</b> は前回から増えたものです（{{ update_report.new_count }} 件）。{% endif %}</p>
   {% if update_report.errors %}<p style="color: var(--error-fg);">読めなかったページ: {{ update_report.errors|join:" / " }}</p>{% endif %}
   {% if update_report.source_enabled %}
   <details{% if update_report.new_events %} open{% endif %}>
     <summary>{{ update_report.source_name }}にあって DB にないイベント（{{ update_report.new_events|length }} 件）</summary>
     <ul>{% for e in update_report.new_events %}
-      <li>{{ e.date }} <a href="{{ e.url }}" target="_blank" rel="noopener">{{ e.title }}</a>{% if e.venue %}（{{ e.venue }}）{% endif %}</li>
+      <li>{% if e.is_new %}<b style="color: var(--error-fg);">新</b> {% endif %}{{ e.date }} <a href="{{ e.url }}" target="_blank" rel="noopener">{{ e.title }}</a>{% if e.venue %}（{{ e.venue }}）{% endif %}</li>
     {% empty %}<li>ありません</li>{% endfor %}</ul>
   </details>
   {% else %}
@@ -39,13 +39,13 @@
   <details{% if update_report.missing_setlists %} open{% endif %}>
     <summary>セットリストがない過去のライブ（{{ update_report.missing_setlists|length }} 件）</summary>
     <ul>{% for e in update_report.missing_setlists %}
-      <li>{{ e.date }} <a href="{% url 'admin:catalog_event_change' e.pk %}">{{ e.title }}</a></li>
+      <li>{% if e.is_new %}<b style="color: var(--error-fg);">新</b> {% endif %}{{ e.date }} <a href="{% url 'admin:catalog_event_change' e.pk %}">{{ e.title }}</a></li>
     {% empty %}<li>ありません</li>{% endfor %}</ul>
   </details>
   <details>
     <summary>これから 1 か月のライブ（{{ update_report.upcoming|length }} 件。終わったらセットリストを足す）</summary>
     <ul>{% for e in update_report.upcoming %}
-      <li>{{ e.date }} <a href="{% url 'admin:catalog_event_change' e.pk %}">{{ e.title }}</a></li>
+      <li>{% if e.is_new %}<b style="color: var(--error-fg);">新</b> {% endif %}{{ e.date }} <a href="{% url 'admin:catalog_event_change' e.pk %}">{{ e.title }}</a></li>
     {% empty %}<li>ありません</li>{% endfor %}</ul>
   </details>
   {% else %}
