@@ -22,7 +22,9 @@ import threading
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-REPO_DIR = HERE.parents[3]  # admin/catalog/tests/e2e → リポジトリの直下
+ADMIN_DIR = HERE.parents[2]  # catalog/tests/e2e → このリポジトリの直下
+# 公開サイトのリポジトリ（HTML/JS を読む）。settings.SITE_DIR と同じく、既定は隣の database_yuikaori/
+SITE_DIR = Path(os.environ.get("YUIKAORI_SITE_DIR") or ADMIN_DIR.parent / "database_yuikaori")
 EXPECTED_FILE = HERE.parent / "fixtures" / "expected" / "frontend.json"
 PAGES = ["index.html", "songs.html", "tour.html", "my.html", "my_c.html", "my_f.html", "calendar.html", "event.html",
          "common.js", "common.css", "table-zoom.js", "site.js", "sub/setlist.html", "sub/search.html"]
@@ -34,7 +36,7 @@ def chromium_path():
     return os.environ.get("CHROMIUM") or shutil.which("chromium") or shutil.which("chromium-browser")
 
 
-def build_site(dest, html_dir=REPO_DIR, json_dir=REPO_DIR):
+def build_site(dest, html_dir=SITE_DIR, json_dir=SITE_DIR):
     dest = Path(dest)
     for name in PAGES:
         src = Path(html_dir) / name

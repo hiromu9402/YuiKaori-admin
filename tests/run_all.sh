@@ -5,7 +5,7 @@
 #   tests/run_all.sh e2e      公開ページの回帰テストだけ
 set -euo pipefail
 cd "$(dirname "$0")/.."
-# 本番の DB と秘密鍵（リポジトリの隣の <リポジトリ>-data/）に触れないよう、指定がなければ使い捨ての保存先にする
+# 本番の DB と秘密鍵（隣の database_yuikaori-data/）に触れないよう、指定がなければ使い捨ての保存先にする
 if [ -z "${YUIKAORI_DATA_DIR:-}" ]; then
   YUIKAORI_DATA_DIR="$(mktemp -d)"
   export YUIKAORI_DATA_DIR

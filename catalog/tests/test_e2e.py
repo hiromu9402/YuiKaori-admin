@@ -19,6 +19,8 @@ from .helpers import LegacyDataTestCase
 
 @tag("e2e")
 @unittest.skipUnless(runner.chromium_path(), "Chromium がないので画面のテストを飛ばします")
+@unittest.skipUnless((runner.SITE_DIR / "index.html").exists(),
+                     f"公開サイトのリポジトリ（{runner.SITE_DIR}）がないので画面のテストを飛ばします")
 class FrontendRegressionTests(LegacyDataTestCase):
     @classmethod
     def setUpTestData(cls):

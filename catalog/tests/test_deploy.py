@@ -1,13 +1,13 @@
-"""公開の仕組みのテスト（GitHub Pages に載せるファイル、リバースプロキシのパスの下で動かす設定）。"""
-import importlib
+"""リバースプロキシのパスの下で動かす設定と、ログインが必要なことのテスト。
+
+（公開サイトに載せるファイルの許可リストのテストは、公開サイトのリポジトリにある）
+"""
 import io
 import json
 import os
 import re
 import subprocess
 import sys
-import tempfile
-from pathlib import Path
 from urllib.parse import urlencode
 from wsgiref.util import setup_testing_defaults
 
@@ -20,45 +20,7 @@ from django.urls import reverse
 
 from config.prefix import PrefixMiddleware
 
-DEPLOY_DIR = Path(settings.BASE_DIR) / "deploy"
-sys.path.insert(0, str(DEPLOY_DIR))
-build_site = importlib.import_module("build_site")
-site_files = importlib.import_module("site_files")
-
 PASSWORD = "test-password-1234"
-
-
-class BuildSiteTests(SimpleTestCase):
-    def test_only_public_files_are_copied(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            files = build_site.build(Path(tmp) / "_site")
-            out = sorted(p.relative_to(Path(tmp) / "_site").as_posix()
-                         for p in (Path(tmp) / "_site").rglob("*") if p.is_file())
-        self.assertEqual(out, files)
-        for page in ["index.html", "songs.html", "tour.html", "event.html", "calendar.html", "my.html",
-                     "sub/setlist.html", "sub/search.html", "common.css", "site.js", "setlist.json"]:
-            with self.subTest(page=page):
-                self.assertIn(page, files)
-        for path in files:
-            with self.subTest(path=path):
-                self.assertFalse(path.startswith(("admin/", ".git", ".github/", "_site/")))
-                self.assertNotIn(path, ["README.md", "HANDOFF.md", ".gitignore"])
-
-    def test_allowlist(self):
-        for path in ["index.html", "song.json", "sub/setlist.html"]:
-            with self.subTest(path=path):
-                self.assertTrue(site_files.allowed(path))
-        for path in ["HANDOFF.md", "README.md", ".gitignore", ".git/config", "admin/serve.py",
-                     "admin/config/settings.py", ".github/workflows/pages.yml", "sub/../admin/x.html",
-                     "sub/notes.md", "../index.html", ".hidden.html"]:
-            with self.subTest(path=path):
-                self.assertFalse(site_files.allowed(path))
-
-    def test_refuses_non_empty_output(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            (Path(tmp) / "old.txt").write_text("x")
-            with self.assertRaises(SystemExit):
-                build_site.build(tmp)
 
 
 class PrefixMiddlewareTests(SimpleTestCase):
