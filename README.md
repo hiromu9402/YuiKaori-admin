@@ -5,7 +5,7 @@
 
 ## セットアップ
 
-リポジトリは GitHub で公開しているので、DB と秘密鍵はリポジトリの外（既定は `~/.local/share/yuikaori-admin`）に置きます。
+リポジトリは GitHub で公開しているので、DB と秘密鍵はリポジトリの外（既定はリポジトリの隣の `<リポジトリ>-data/`。例: `~/claude/database_yuikaori-data`）に置きます。
 
 ```bash
 cd admin
@@ -64,7 +64,7 @@ Environment=YUIKAORI_CSRF_TRUSTED_ORIGINS=https://<ホスト名>[:<ポート>]
 
 ## データ
 
-`~/.local/share/yuikaori-admin` に保存されます。環境変数 `YUIKAORI_DATA_DIR` で変えられます（テストは使い捨てのディレクトリを使います）。書き出し先は `YUIKAORI_SITE_DIR` で変えられます（既定はリポジトリの直下）。
+リポジトリの隣の `<リポジトリ>-data/`（例: `~/claude/database_yuikaori-data`）に保存されます。環境変数 `YUIKAORI_DATA_DIR` で変えられます（テストは使い捨てのディレクトリを使います）。書き出し先は `YUIKAORI_SITE_DIR` で変えられます（既定はリポジトリの直下）。
 
 | ファイル | 内容 |
 |---|---|
