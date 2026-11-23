@@ -147,6 +147,39 @@ class ReportTests(NoNetworkMixin, TestCase):
             self.assertContains(response, "まだ登録していないイベント")
             self.assertContains(response, reverse("admin:catalog_event_change", args=[self.no_setlist.pk]))
 
+    def test_notify_new_only_when_increased(self):
+        pages = {"html": page((2, "2027-01-01", "まだ登録していないイベント", "会場"))}
+        with tempfile.TemporaryDirectory() as tmp, override_settings(DATA_DIR=Path(tmp)), \
+                mock.patch.object(updates, "fetch_page", lambda url: pages["html"]), \
+                mock.patch.object(updates, "WAIT_SECONDS", 0), \
+                mock.patch.object(updates, "today", lambda: TODAY), mock.patch("subprocess.run") as run:
+            (Path(tmp) / "update_sources.json").write_text(json.dumps(SOURCE, ensure_ascii=False), encoding="utf-8")
+            run.return_value.returncode = 0
+            # 1 回目：前回がないので、すべて新しい → 送る
+            call_command("check_updates", "--notify-new", stdout=io.StringIO())
+            self.assertEqual(run.call_count, 1)
+            self.assertIn("候補が増えました", run.call_args.args[0][1])
+            # 2 回目：同じ候補 → 送らない（保存はする）
+            out = io.StringIO()
+            call_command("check_updates", "--notify-new", stdout=out)
+            self.assertEqual(run.call_count, 1)
+            self.assertIn("新しい候補がないので", out.getvalue())
+            saved = json.loads((Path(tmp) / "update_report.json").read_text(encoding="utf-8"))
+            self.assertEqual(saved["new_count"], 0)
+            # 3 回目：新しいイベントが増えた → 増えた分だけを送る
+            pages["html"] = page((2, "2027-01-01", "まだ登録していないイベント", "会場"),
+                                 (3, "2027-02-02", "新しく発表されたイベント", "会場"))
+            call_command("check_updates", "--notify-new", stdout=io.StringIO())
+            self.assertEqual(run.call_count, 2)
+            sent = run.call_args.args[0][1]
+            self.assertIn("テストの一覧にあって DB にないイベント: 1 件", sent)
+            self.assertIn("新しく発表されたイベント", sent)
+            self.assertNotIn("まだ登録していないイベント", sent)
+            # 管理画面のトップでは、増えたものに「新」の印が付く
+            user = get_user_model().objects.create_superuser("owner", password="test-password-1234")
+            self.client.force_login(user, backend="django.contrib.auth.backends.ModelBackend")
+            self.assertContains(self.client.get(reverse("admin:index")), "は前回から増えたものです（1 件）")
+
     def test_top_page_before_first_run(self):
         with tempfile.TemporaryDirectory() as tmp, override_settings(DATA_DIR=Path(tmp)):
             user = get_user_model().objects.create_superuser("owner", password="test-password-1234")

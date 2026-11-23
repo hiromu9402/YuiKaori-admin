@@ -1,6 +1,7 @@
 """データ更新の候補を集める（manage.py check_updates）。
 
-毎月 1 日に cron で実行し、次の 3 つを update_report.json（保存先）にまとめる。管理画面のトップに表示し、LINE にも知らせる。
+毎週月曜に cron で実行し、次の 3 つを update_report.json（保存先）にまとめる。管理画面のトップに表示し、
+前回から新しい候補が増えたときは LINE にも知らせる（--notify-new）。
 1. 外部のイベント一覧（出演者ごとのイベントのページ）にあって、DB にないイベント（これから・最近のもの）
 2. 開催日を過ぎたのに、セットリストがないライブ（フェス・合同ライブも含む）
 3. これから 1 か月のライブ・ファンクラブイベント（終わったらセットリストを足す）
@@ -193,6 +194,41 @@ def build_report(today=None, fetch=None, wait=None, source=None):
         "upcoming": [event_row(e) for e in upcoming],
         "errors": errors,
     }
+
+
+# 候補の種類ごとに、同じものかどうかを決める項目（前回の候補と比べて、新しいものに印を付ける）
+KINDS = [("new_events", "id"), ("missing_setlists", "pk"), ("upcoming", "pk")]
+
+
+def mark_new(report, previous):
+    """前回の候補になかったものに "is_new": True を付け、新しいものの件数を返す。前回がないときはすべて新しい。"""
+    count = 0
+    for kind, key in KINDS:
+        before = {x.get(key) for x in (previous or {}).get(kind, [])}
+        for x in report[kind]:
+            x["is_new"] = x.get(key) not in before
+            count += x["is_new"]
+    report["new_count"] = count
+    return count
+
+
+def new_summary(report, admin_url="", limit=5):
+    """LINE で送る本文（前回から新しく増えた候補だけ）。"""
+    labels = {"new_events": f"{report['source_name']}にあって DB にないイベント",
+              "missing_setlists": "セットリストがない過去のライブ", "upcoming": "これから 1 か月のライブ"}
+    lines = [f"ゆいかおりDB の更新の候補が増えました（{report['today']}）"]
+    for kind, _ in KINDS:
+        items = [x for x in report[kind] if x.get("is_new")]
+        if not items:
+            continue
+        lines.append(f"■ {labels[kind]}: {len(items)} 件")
+        lines += [f"・{x['date']} {x['title']}" for x in items[:limit]]
+        if len(items) > limit:
+            lines.append(f"・ほか {len(items) - limit} 件")
+    if report["errors"]:
+        lines.append(f"（読めなかったページ: {len(report['errors'])} 件）")
+    lines.append("詳しくは管理画面のトップを見てください。" + (f"\n{admin_url}" if admin_url else ""))
+    return "\n".join(lines)
 
 
 def summary(report, admin_url=""):
