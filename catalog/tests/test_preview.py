@@ -37,7 +37,10 @@ class PreviewTests(LegacyDataTestCase):
         (site / ".git" / "config").write_text("[core]")
         (site / "song.json").write_text("[]")  # 古い公開ファイル（プレビューでは使わない）
         self.site = site
-        override = override_settings(SITE_DIR=site)
+        # 作業中のブランチの代わり（作家のページが増えたもの）。テストごとに作るかどうかを決める
+        self.dev = Path(self._tmp.name + "-dev")
+        self.addCleanup(lambda: __import__("shutil").rmtree(self.dev, ignore_errors=True))
+        override = override_settings(SITE_DIR=site, PREVIEW_DEV_DIR=self.dev)
         override.enable()
         self.addCleanup(override.disable)
         self.client.force_login(self.user, backend="django.contrib.auth.backends.ModelBackend")
@@ -99,3 +102,37 @@ class PreviewTests(LegacyDataTestCase):
                 response = self.client.get(url)
                 self.assertContains(response, "公開中のサイトとの違い（setlist.json")
                 self.assertContains(response, f"~ {live.pk} ")
+
+    def make_dev(self):
+        (self.dev / "sub").mkdir(parents=True)
+        (self.dev / "index.html").write_text("<html><body><p>作業中のトップ</p></body></html>")
+        (self.dev / "writers.html").write_text("<html><body><p>作家から探す</p></body></html>")
+        (self.dev / "README.md").write_text("公開しない")
+
+    def test_dev_branch_preview(self):
+        self.make_dev()
+        # 作業中のブランチのページ（main にはない writers.html も開ける）。JSON は DB から作る
+        text = self.client.get(self.url("dev/writers.html")).content.decode()
+        self.assertIn("作家から探す", text)
+        self.assertIn("作業中のブランチ（作業中のフォルダー）のページで表示しています", text)
+        self.assertIn(f'href="{self.url("writers.html")}"', text)  # main で見るへの切り替え
+        self.assertIn("作業中のトップ", self.client.get(self.url("dev/")).content.decode())
+        self.assertEqual(json.loads(self.client.get(self.url("dev/song.json")).content), exporter.export_songs())
+        for path in ["dev/README.md", "dev/../index.html", "dev/sub/../README.md"]:
+            with self.subTest(path=path):
+                self.assertEqual(self.client.get(self.url(path)).status_code, 404)
+        self.assertEqual(self.client.get(self.url("writers.html")).status_code, 404)  # main にはまだない
+        # main のページから作業中のブランチへ切り替えられる（クエリも引き継ぐ）
+        main = self.client.get(self.url("sub/setlist.html") + "?id=2025112401").content.decode()
+        self.assertIn(f'href="{self.url("dev/sub/setlist.html")}?id=2025112401"', main)
+        self.assertIn("公開中（main）のページで表示しています", main)
+        # トップと書き出しの画面にボタンが出る
+        for url in [reverse("admin:index"), reverse("admin:export")]:
+            with self.subTest(url=url):
+                self.assertContains(self.client.get(url), "作業中のブランチ（作業中のフォルダー）のプレビュー")
+
+    def test_without_dev_branch(self):
+        self.assertEqual(self.client.get(self.url("dev/index.html")).status_code, 404)
+        self.assertEqual(self.client.get(self.url("dev/")).status_code, 404)
+        self.assertNotIn("作業中のブランチ", self.client.get(self.url("index.html")).content.decode())
+        self.assertNotContains(self.client.get(reverse("admin:index")), "作業中のブランチ")

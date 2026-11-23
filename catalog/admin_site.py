@@ -29,7 +29,7 @@ class YuikaoriAdminSite(admin.AdminSite):
 
     def index(self, request, extra_context=None):
         # manage.py check_updates（毎月 1 日に cron で実行）が集めた候補
-        context = {"update_report": load_report(), "site_changes": site_changes()}
+        context = {"update_report": load_report(), "site_changes": site_changes(), "dev_preview": preview.dev_preview()}
         return super().index(request, {**(extra_context or {}), **context})
 
     def get_urls(self):
@@ -39,7 +39,7 @@ class YuikaoriAdminSite(admin.AdminSite):
         ] + super().get_urls()
 
     def preview_view(self, request, path):
-        return preview.serve(request, path, reverse("admin:index"))
+        return preview.serve(request, path, reverse("admin:index"), reverse("admin:preview", args=[""]))
 
     def export_view(self, request):
         context = {**self.each_context(request), "title": "公開ファイルの書き出し"}
@@ -57,5 +57,5 @@ class YuikaoriAdminSite(admin.AdminSite):
         if result is None:
             errors, warnings = validate()
             result = {"errors": errors, "warnings": warnings, "changed": None, "diffstat": ""}
-        context.update(result=result, site_changes=site_changes())
+        context.update(result=result, site_changes=site_changes(), dev_preview=preview.dev_preview())
         return TemplateResponse(request, "admin/catalog/export.html", context)
