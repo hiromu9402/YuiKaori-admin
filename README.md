@@ -1,14 +1,23 @@
 # ゆいかおりデータベース 管理画面
 
-公開サイト（リポジトリの直下にある `index.html` など）のデータを管理する、1人用の管理画面です（Django + SQLite）。
-データの元は SQLite で、公開用の JSON（`song.json`・`CD.json`・`setlist.json`・`event.json`・`tours.json`・`checklist.json`）は管理画面から書き出します。
+公開サイト [hiromu9402/YuiKaori](https://github.com/hiromu9402/YuiKaori)（https://hiromu9402.github.io/YuiKaori/）のデータを管理する、1人用の管理画面です（Django + SQLite）。
+データの元は SQLite で、公開用の JSON（`song.json`・`CD.json`・`setlist.json`・`event.json`・`tours.json`・`checklist.json`）は管理画面から公開サイトのリポジトリに書き出します。
+
+## フォルダーの置き方
+
+```
+~/claude/database_yuikaori-admin/   このリポジトリ（管理画面）
+~/claude/database_yuikaori/         公開サイトのリポジトリ（hiromu9402/YuiKaori）。JSON の書き出し先
+~/claude/database_yuikaori-data/    DB・秘密鍵（git には入れない）
+```
+
+公開サイトのリポジトリと DB の場所は、既定ではこのリポジトリの隣です。環境変数 `YUIKAORI_SITE_DIR`・`YUIKAORI_DATA_DIR` で変えられます。
 
 ## セットアップ
 
-リポジトリは GitHub で公開しているので、DB と秘密鍵はリポジトリの外（既定はリポジトリの隣の `<リポジトリ>-data/`。例: `~/claude/database_yuikaori-data`）に置きます。
+リポジトリは GitHub で公開しているので、DB と秘密鍵はリポジトリの外（既定は隣の `database_yuikaori-data/`）に置きます。
 
 ```bash
-cd admin
 uv venv .venv
 uv pip install --python .venv/bin/python -r requirements.txt
 .venv/bin/python manage.py migrate
@@ -64,7 +73,7 @@ Environment=YUIKAORI_CSRF_TRUSTED_ORIGINS=https://<ホスト名>[:<ポート>]
 
 ## データ
 
-リポジトリの隣の `<リポジトリ>-data/`（例: `~/claude/database_yuikaori-data`）に保存されます。環境変数 `YUIKAORI_DATA_DIR` で変えられます（テストは使い捨てのディレクトリを使います）。書き出し先は `YUIKAORI_SITE_DIR` で変えられます（既定はリポジトリの直下）。
+隣の `database_yuikaori-data/` に保存されます。環境変数 `YUIKAORI_DATA_DIR` で変えられます（テストは使い捨てのディレクトリを使います）。書き出し先は `YUIKAORI_SITE_DIR` で変えられます（既定は隣の `database_yuikaori/`）。
 
 | ファイル | 内容 |
 |---|---|
@@ -83,16 +92,10 @@ tests/run_all.sh e2e      # 公開ページの回帰テスト（headless Chromiu
 ```
 
 - `catalog/tests/fixtures/legacy/` には、DB 化する前の公開ファイルを保存しています。取り込み→書き出しの往復で、これと中身が一致することを確かめます。
-- `catalog/tests/fixtures/expected/frontend.json` は、DB 化する前の公開ページの表示結果（披露回数・未回収数・比較表など）です。書き出した JSON と今の HTML で同じ結果になることを、headless Chromium で確かめます。
+- `catalog/tests/fixtures/expected/frontend.json` は、DB 化する前の公開ページの表示結果（披露回数・未回収数・比較表など）です。書き出した JSON と、公開サイトのリポジトリにある今の HTML で同じ結果になることを、headless Chromium で確かめます（公開サイトのリポジトリがないときは飛ばします）。
 
 ## 公開サイトの配信
 
-公開サイトは GitHub Pages で公開する（`.github/workflows/pages.yml`）。`main` に push すると、Actions が `admin/deploy/build_site.py` で公開ファイルだけを集めて公開する。
+公開サイトは、公開サイトのリポジトリ（hiromu9402/YuiKaori）の GitHub Pages で公開しています。公開するファイルの許可リストや Actions の設定は、そちらのリポジトリにあります。
 
-公開するファイルは `admin/deploy/site_files.py` の許可リストで決める。リポジトリ直下の `.html` / `.css` / `.js` / `.json` と `sub/` のページだけで、`.git/`、`admin/`、`.github/`、`README.md`、`HANDOFF.md` などは含めない。
-
-    python3 admin/deploy/build_site.py /tmp/site    # 公開される内容を手元で確かめる
-
-手元で確かめるときは `admin/deploy/serve_site.py` で配信する（127.0.0.1:8765、同じ許可リストを使う）。`python3 -m http.server` でリポジトリをそのまま配信すると、許可リスト以外のファイルも外から見えてしまうので使わない。
-
-    python3 admin/deploy/serve_site.py            # 127.0.0.1:8765
+管理画面で書き出したら、公開サイトのリポジトリで JSON の差分を確かめて commit・push します。
