@@ -1,6 +1,6 @@
 """ゆいかおりデータベース管理画面の設定。
 
-データ（SQLite・秘密鍵・collectstatic の出力）は admin/data/ に置く。
+データ（SQLite・秘密鍵・collectstatic の出力）は、リポジトリの外の ~/.local/share/yuikaori-admin/ に置く。
 環境変数 YUIKAORI_DATA_DIR で保存先を、YUIKAORI_SITE_DIR で公開 JSON の書き出し先を変えられる。
 """
 import os
@@ -8,7 +8,8 @@ import secrets
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = Path(os.environ.get("YUIKAORI_DATA_DIR") or BASE_DIR / "data")
+# リポジトリは GitHub で公開しているので、DB と秘密鍵は既定でもリポジトリの外に置く
+DATA_DIR = Path(os.environ.get("YUIKAORI_DATA_DIR") or Path.home() / ".local/share/yuikaori-admin")
 # 公開サイトのルート（song.json などを書き出す場所）。既定はリポジトリの直下
 SITE_DIR = Path(os.environ.get("YUIKAORI_SITE_DIR") or BASE_DIR.parent)
 
