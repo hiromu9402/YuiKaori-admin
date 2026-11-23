@@ -71,6 +71,35 @@ Environment=YUIKAORI_CSRF_TRUSTED_ORIGINS=https://<ホスト名>[:<ポート>]
 .venv/bin/python manage.py export_json      # チェックしてから書き出す
 ```
 
+## 作業用のコマンド
+
+データを直すときや、確認するときによく使うものです（`.venv/bin/python manage.py …`）。
+
+| コマンド | すること |
+|---|---|
+| `backup_db --label <名前>` | DB を保存先の `backup/` に写す（`db-日時-名前.sqlite3`）。サービスが動いている最中でも壊れない方法で写す。データを直す前に使う |
+| `export_json --check` | 書き出さずに、今の公開ファイルから何が変わるかを表示する（追加・削除・変更された公演・曲・イベントなど） |
+| `record_verify <CSV>` | 公演の照合の記録（状態・照合日・出典・メモ）を CSV からまとめて書き込む。`--apply` を付けないと差分の表示だけ。1行でも誤りがあると何も書き込まない |
+| `tasks list` / `add` / `update` / `done` | タスクの一覧（`--all` で完了も）・追加・更新（状態・優先度・メモの追記）・完了 |
+
+`record_verify` の CSV（UTF-8、1行目は見出し）:
+
+```csv
+live_id,status,date,source,note
+2025112401,一致,2026-11-24,https://example.com/report | 公式 X の投稿,アンコールの曲順も一致
+```
+
+- `status` は `ok`・`fixed`・`partial`・`doubt`・`notfound` か、表示名（一致・修正済み など）。`date` が空なら今日。
+- `source` は「 | 」で区切ると、1行に1つずつ入る。`source`・`note` が空なら今の値のまま。
+
+### 画面の確認用サーバー
+
+```bash
+.venv/bin/python tools/preview_server.py          # http://127.0.0.1:8766/
+```
+
+本番の DB の写しを一時ディレクトリに作り、ログインした状態の管理画面を開きます（画面写真や見た目の確認用）。本番の DB と秘密鍵には書き込みません。ログインを省くので 127.0.0.1 でしか待ち受けず、止めると（Ctrl-C でも kill でも）写しは消えます。
+
 ## データ
 
 隣の `database_yuikaori-data/` に保存されます。環境変数 `YUIKAORI_DATA_DIR` で変えられます（テストは使い捨てのディレクトリを使います）。書き出し先は `YUIKAORI_SITE_DIR` で変えられます（既定は隣の `database_yuikaori/`）。
