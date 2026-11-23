@@ -5,11 +5,10 @@
 
 ## セットアップ
 
-リポジトリのディレクトリは公開サイトとしてそのまま配信されることがあるので、DB と秘密鍵はリポジトリの外に置きます（`YUIKAORI_DATA_DIR`）。
+リポジトリは GitHub で公開しているので、DB と秘密鍵はリポジトリの外（既定は `~/.local/share/yuikaori-admin`）に置きます。
 
 ```bash
 cd admin
-export YUIKAORI_DATA_DIR=~/.local/share/yuikaori-admin   # manage.py を使うときは毎回設定する
 uv venv .venv
 uv pip install --python .venv/bin/python -r requirements.txt
 .venv/bin/python manage.py migrate
@@ -32,7 +31,19 @@ systemctl --user daemon-reload
 systemctl --user enable --now yuikaori-admin
 ```
 
-`127.0.0.1` だけで待ち受けます。ほかの端末から使うときは、tailscale serve などの HTTPS のプロキシ経由にしてください。その場合は、サービスファイルのコメントにある環境変数（`YUIKAORI_COOKIE_SECURE`・`YUIKAORI_ALLOWED_HOSTS`・`YUIKAORI_CSRF_TRUSTED_ORIGINS`）を設定します。
+`127.0.0.1` だけで待ち受けます。ほかの端末から使うときは、HTTPS のリバースプロキシ経由にしてください。その場合は、サービスファイルのコメントにある環境変数を設定します。実際のホスト名やパスはリポジトリに書かず、systemd の drop-in（`~/.config/systemd/user/yuikaori-admin.service.d/*.conf`）で渡します。
+
+```ini
+[Service]
+Environment=YUIKAORI_URL_PREFIX=/<パス>          # パスの下で動かすときだけ
+Environment=YUIKAORI_COOKIE_SECURE=1
+Environment=YUIKAORI_ALLOWED_HOSTS=127.0.0.1,localhost,<ホスト名>
+Environment=YUIKAORI_CSRF_TRUSTED_ORIGINS=https://<ホスト名>[:<ポート>]
+```
+
+- `YUIKAORI_URL_PREFIX` を指定すると、リンク・リダイレクト・CSS の URL にそのパスが付きます。プロキシがパスを外して転送しても、付けたまま転送しても動きます。
+- Cookie は管理画面専用の名前（`yuikaori_sessionid`・`yuikaori_csrftoken`）で、管理画面のパスの下だけに送られます。同じアドレスのほかのアプリとはぶつかりません。
+- インターネットから開ける場所に置くときは、パスワードを長いものにしてください（`.venv/bin/python manage.py changepassword <ユーザー名>`）。ログイン画面以外は、ログインしないと見えません。
 ログインに5回続けて失敗すると、その接続元は15分間ロックされます（django-axes）。ロックを解除するときは `.venv/bin/python manage.py axes_reset` を実行します。
 
 ## 使い方
@@ -53,7 +64,7 @@ systemctl --user enable --now yuikaori-admin
 
 ## データ
 
-環境変数 `YUIKAORI_DATA_DIR` のディレクトリに保存されます（本番は `~/.local/share/yuikaori-admin`。設定しないと `admin/data/` で、これは開発用です）。書き出し先は `YUIKAORI_SITE_DIR` で変えられます（既定はリポジトリの直下）。
+`~/.local/share/yuikaori-admin` に保存されます。環境変数 `YUIKAORI_DATA_DIR` で変えられます（テストは使い捨てのディレクトリを使います）。書き出し先は `YUIKAORI_SITE_DIR` で変えられます（既定はリポジトリの直下）。
 
 | ファイル | 内容 |
 |---|---|
@@ -76,6 +87,12 @@ tests/run_all.sh e2e      # 公開ページの回帰テスト（headless Chromiu
 
 ## 公開サイトの配信
 
-公開サイトは `admin/deploy/serve_site.py` で配信する（127.0.0.1:8765）。リポジトリ直下の `.html` / `.css` / `.js` / `.json` と `sub/` のページだけを返し、`.git/`、`admin/`、`HANDOFF.md` などは 404 にする許可リスト方式。`python3 -m http.server` でリポジトリをそのまま配信すると、これらのファイルも外から見えてしまうので使わない。
+公開サイトは GitHub Pages で公開する（`.github/workflows/pages.yml`）。`main` に push すると、Actions が `admin/deploy/build_site.py` で公開ファイルだけを集めて公開する。
+
+公開するファイルは `admin/deploy/site_files.py` の許可リストで決める。リポジトリ直下の `.html` / `.css` / `.js` / `.json` と `sub/` のページだけで、`.git/`、`admin/`、`.github/`、`README.md`、`HANDOFF.md` などは含めない。
+
+    python3 admin/deploy/build_site.py /tmp/site    # 公開される内容を手元で確かめる
+
+手元で確かめるときは `admin/deploy/serve_site.py` で配信する（127.0.0.1:8765、同じ許可リストを使う）。`python3 -m http.server` でリポジトリをそのまま配信すると、許可リスト以外のファイルも外から見えてしまうので使わない。
 
     python3 admin/deploy/serve_site.py            # 127.0.0.1:8765
