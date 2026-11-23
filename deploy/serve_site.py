@@ -1,6 +1,6 @@
 """公開サイトを配信する小さなサーバー（許可リスト方式）。
 
-リポジトリ直下の .html / .css / .js / .json と、sub/ の .html だけを返し、それ以外は 404 にする。
+許可リスト（site_files.py。GitHub Pages に載せる内容と同じ）に合うファイルだけを返し、それ以外は 404 にする。
 .git/、admin/（管理画面のソースやデータ）、HANDOFF.md などの作業用ファイルは外から見えない。
 
     python3 admin/deploy/serve_site.py            # 127.0.0.1:8765 で待ち受ける
@@ -8,21 +8,12 @@
 """
 import argparse
 import http.server
-import re
+import sys
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-SITE_DIR = Path(__file__).resolve().parents[2]  # admin/deploy/ → リポジトリの直下
-
-# 公開してよいパス（リポジトリ直下からの相対パス）
-ALLOWED = [
-    re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9_.-]*\.(html|css|js|json)$"),
-    re.compile(r"^sub/[A-Za-z0-9_-][A-Za-z0-9_.-]*\.html$"),
-]
-
-
-def allowed(relpath):
-    return any(p.match(relpath) for p in ALLOWED)
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from site_files import SITE_DIR, allowed  # noqa: E402  許可リストは build_site.py と共通
 
 
 class SiteHandler(http.server.SimpleHTTPRequestHandler):
