@@ -48,6 +48,12 @@
       <li>{% if e.is_new %}<b style="color: var(--error-fg);">新</b> {% endif %}{{ e.date }} <a href="{% url 'admin:catalog_event_change' e.pk %}">{{ e.title }}</a></li>
     {% empty %}<li>ありません</li>{% endfor %}</ul>
   </details>
+  <details{% if update_report.outdated_packages %} open{% endif %}>
+    <summary>新しい版が出たパッケージ（{{ update_report.outdated_packages|length }} 件。requirements.txt を上げる）</summary>
+    <ul>{% for p in update_report.outdated_packages %}
+      <li>{% if p.is_new %}<b style="color: var(--error-fg);">新</b> {% endif %}<a href="{{ p.url }}" target="_blank" rel="noopener">{{ p.name }} {{ p.installed }} → {{ p.latest }}</a>{% if p.date %}（{{ p.date }} 公開）{% endif %}{% if p.vulnerabilities %} <span style="color: var(--error-fg);">今の版の脆弱性: {{ p.vulnerabilities|join:", " }}</span>{% endif %}</li>
+    {% empty %}<li>ありません</li>{% endfor %}</ul>
+  </details>
   {% else %}
   <p>まだ集めていません（<code>manage.py check_updates</code> を実行すると、ここに出ます）。</p>
   {% endif %}

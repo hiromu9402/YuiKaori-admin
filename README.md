@@ -86,17 +86,20 @@ Environment=YUIKAORI_CSRF_TRUSTED_ORIGINS=https://<ホスト名>[:<ポート>]
 
 ### データ更新の候補（毎週月曜）
 
-`manage.py check_updates` は、次の 3 つを集めて保存先の `update_report.json` に書き、管理画面のトップの「データ更新の候補」に出します。`--notify` を付けると LINE にも知らせます（`--notify-new` なら、前回から新しい候補が増えたときだけ、増えた分を知らせます。管理画面のトップでは、増えたものに「新」の印が付きます）（`YUIKAORI_LINE_NOTIFY` のコマンド。既定は `~/.local/bin/line-notify`。本文に付ける管理画面の URL は `YUIKAORI_ADMIN_URL`）。
+`manage.py check_updates` は、次の 4 つを集めて保存先の `update_report.json` に書き、管理画面のトップの「データ更新の候補」に出します。`--notify` を付けると LINE にも知らせます（`--notify-new` なら、前回から新しい候補が増えたときだけ、増えた分を知らせます。管理画面のトップでは、増えたものに「新」の印が付きます）（`YUIKAORI_LINE_NOTIFY` のコマンド。既定は `~/.local/bin/line-notify`。本文に付ける管理画面の URL は `YUIKAORI_ADMIN_URL`）。
 
 1. 外部のイベント一覧（出演者ごとのイベントのページ）にあって、DB にないイベント（60 日前から先の予定まで。同じ日付で題名が似ているものは登録済みとみなす）
 2. 開催日を過ぎたのに、セットリストがないライブ（1 年前まで。フェス・合同ライブも含む）
 3. これから 1 か月のライブ・ファンクラブイベント（終わったらセットリストを足す）
+4. `requirements.txt` のパッケージのうち、PyPI に新しい版が出ているもの（入っている版に知られた脆弱性があれば、その ID も出す）。同じ版のままなら、次の週は知らせません。さらに新しい版が出たら、また知らせます
 
 1 の読み先（一覧の URL・出演者の番号・ページから取り出す正規表現）は、保存先の `update_sources.json` に書きます（リポジトリには入れません。書き方は `catalog/updates.py` の説明）。ないときは 1 を飛ばします。外部のサイトは 1 人あたり数ページだけを、2 秒ずつ間をあけて読みます。`--dry-run` で、保存も通知もせずに結果だけを見られます。毎週月曜に cron で実行します。
 
 ```cron
 0 9 * * 1 cd ~/claude/database_yuikaori-admin && .venv/bin/python manage.py check_updates --notify-new >> ~/claude/database_yuikaori-data/check_updates.log 2>&1
 ```
+
+4 で新しい版が出ていたら、リリースノートでセキュリティ修正や互換性のない変更を確かめてから `requirements.txt` を上げます。PR をマージしたら、DB をバックアップして `uv pip install --python .venv/bin/python -r requirements.txt`・`migrate`・`collectstatic --noinput` を実行し、サービスを再起動します。GitHub の Dependabot alerts も有効にしてあり、脆弱性が見つかったときは GitHub からも知らせが届きます。
 
 `record_verify` の CSV（UTF-8、1行目は見出し）:
 

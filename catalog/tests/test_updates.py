@@ -1,4 +1,5 @@
 """データ更新の候補（check_updates）のテスト。外部のサイトにはアクセスせず、架空のサイトのページを差し替える。"""
+import importlib.metadata
 import io
 import json
 import tempfile
@@ -48,6 +49,24 @@ class NoNetworkMixin:
         patcher = mock.patch("urllib.request.urlopen", no_network)
         patcher.start()
         self.addCleanup(patcher.stop)
+        # PyPI も読まない。既定では、どのパッケージも今の版が最新とする
+        patcher = mock.patch.object(updates, "fetch_json", pypi())
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+
+def pypi(latest=None, vulns=None):
+    """架空の PyPI。latest に {名前: 新しい版}、vulns に {名前: [脆弱性の ID]} を渡す。"""
+    latest, vulns = latest or {}, vulns or {}
+
+    def fetch(url):
+        parts = url.split("/pypi/")[1].rstrip("/").split("/")
+        name = parts[0]
+        if parts[1:] == ["json"]:
+            version = latest.get(name) or importlib.metadata.version(name)
+            return {"info": {"version": version}, "urls": [{"upload_time": "2026-11-03T12:00:00"}]}
+        return {"info": {"version": parts[1]}, "vulnerabilities": [{"id": v} for v in vulns.get(name, [])]}
+    return fetch
 
 
 class ParseTests(TestCase):
@@ -194,3 +213,46 @@ class ReportTests(NoNetworkMixin, TestCase):
             call_command("check_updates", "--dry-run", "--notify", stdout=io.StringIO())
             self.assertFalse((Path(tmp) / "update_report.json").exists())
             run.assert_not_called()
+
+
+class PackageTests(NoNetworkMixin, TestCase):
+    def test_outdated_packages(self):
+        found, errors = updates.outdated_packages(pypi({"django": "99.0"}, {"django": ["PYSEC-0000-1"]}))
+        self.assertEqual(errors, [])
+        self.assertEqual([(p["name"], p["latest"], p["vulnerabilities"]) for p in found],
+                         [("django", "99.0", ["PYSEC-0000-1"])])
+        self.assertEqual(found[0]["date"], "2026-11-03")
+        self.assertIn("今の版の脆弱性: PYSEC-0000-1", found[0]["title"])
+
+    def test_up_to_date_and_errors(self):
+        self.assertEqual(updates.outdated_packages(pypi()), ([], []))
+
+        def broken(url):
+            raise OSError("つながりません")
+        found, errors = updates.outdated_packages(broken)
+        self.assertEqual(found, [])
+        self.assertEqual(len(errors), len(updates.requirements()))
+
+    def test_notify_and_top_page(self):
+        with tempfile.TemporaryDirectory() as tmp, override_settings(DATA_DIR=Path(tmp)), \
+                mock.patch.object(updates, "today", lambda: TODAY), mock.patch("subprocess.run") as run:
+            run.return_value.returncode = 0
+            with mock.patch.object(updates, "fetch_json", pypi({"django": "99.0"})):
+                call_command("check_updates", "--notify-new", stdout=io.StringIO())
+            sent = run.call_args.args[0][1]
+            self.assertIn("新しい版が出たパッケージ（管理画面）: 1 件", sent)
+            self.assertIn("django", sent)
+            # 同じ版のままなら知らせない。さらに新しい版が出たら、また知らせる
+            with mock.patch.object(updates, "fetch_json", pypi({"django": "99.0"})):
+                call_command("check_updates", "--notify-new", stdout=io.StringIO())
+            self.assertEqual(run.call_count, 1)
+            with mock.patch.object(updates, "fetch_json", pypi({"django": "99.1"})):
+                call_command("check_updates", "--notify-new", stdout=io.StringIO())
+            self.assertEqual(run.call_count, 2)
+            self.assertIn("99.1", run.call_args.args[0][1])
+
+            user = get_user_model().objects.create_superuser("owner", password="test-password-1234")
+            self.client.force_login(user, backend="django.contrib.auth.backends.ModelBackend")
+            response = self.client.get(reverse("admin:index"))
+            self.assertContains(response, "新しい版が出たパッケージ（1 件")
+            self.assertContains(response, "https://pypi.org/project/django/99.1/")

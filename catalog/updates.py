@@ -5,6 +5,7 @@
 1. 外部のイベント一覧（出演者ごとのイベントのページ）にあって、DB にないイベント（これから・最近のもの）
 2. 開催日を過ぎたのに、セットリストがないライブ（フェス・合同ライブも含む）
 3. これから 1 か月のライブ・ファンクラブイベント（終わったらセットリストを足す）
+4. requirements.txt のパッケージのうち、新しい版が出ているもの（PyPI で確かめる。今の版の脆弱性も出す）
 
 1 の読み先は、保存先の update_sources.json に書く（リポジトリには入れない）。ないときは 1 を飛ばす。
   {
@@ -24,6 +25,7 @@
 """
 import difflib
 import html
+import importlib.metadata
 import json
 import os
 import re
@@ -141,6 +143,57 @@ def fetch_recent(source, today, fetch=None, wait=None):
     return sorted(found.values(), key=lambda e: (e["date"], e["title"])), errors
 
 
+# ---------- パッケージの更新 ----------
+
+PYPI_URL = "https://pypi.org/pypi/{name}/json"
+PYPI_VERSION_URL = "https://pypi.org/pypi/{name}/{version}/json"
+
+
+def requirements_path():
+    return Path(settings.BASE_DIR) / "requirements.txt"
+
+
+def requirements():
+    """requirements.txt の「名前==版」の名前を順に返す。"""
+    names = []
+    for line in requirements_path().read_text(encoding="utf-8").splitlines():
+        line = line.split("#")[0].strip()
+        if "==" in line:
+            names.append(line.split("==")[0].strip())
+    return names
+
+
+def fetch_json(url):
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(req, timeout=30) as res:
+        return json.loads(res.read().decode("utf-8"))
+
+
+def outdated_packages(fetch=None):
+    """入っている版より新しい版が PyPI に出ているパッケージを返す。今の版に知られた脆弱性があれば、その ID も付ける。"""
+    fetch = fetch or fetch_json
+    found, errors = [], []
+    for name in requirements():
+        try:
+            installed = importlib.metadata.version(name)
+            latest = fetch(PYPI_URL.format(name=name))
+            current = fetch(PYPI_VERSION_URL.format(name=name, version=installed))
+        except Exception as e:  # noqa: BLE001  1 つ読めなくても、ほかのパッケージは続ける
+            errors.append(f"{name} の版を確かめられませんでした: {e}")
+            continue
+        version = latest["info"]["version"]
+        if version == installed:
+            continue
+        files = latest.get("urls") or []
+        released = (files[0].get("upload_time") or "")[:10] if files else ""
+        vulns = [v.get("id") for v in current.get("vulnerabilities") or [] if v.get("id")]
+        title = f"{name} {installed} → {version}" + (f"（今の版の脆弱性: {', '.join(vulns)}）" if vulns else "")
+        found.append({"key": f"{name}=={version}", "name": name, "installed": installed, "latest": version,
+                      "date": released, "title": title, "vulnerabilities": vulns,
+                      "url": f"https://pypi.org/project/{name}/{version}/"})
+    return found, errors
+
+
 # ---------- DB との突き合わせ ----------
 
 def normalize(text):
@@ -169,7 +222,7 @@ def event_row(ev):
             "artists": [a.name for a in ev.artists.all()]}
 
 
-def build_report(today=None, fetch=None, wait=None, source=None):
+def build_report(today=None, fetch=None, wait=None, source=None, fetch_json=None):
     today = today or globals()["today"]()
     source = source if source is not None else load_source()
     new, errors, checked = [], [], 0
@@ -177,6 +230,7 @@ def build_report(today=None, fetch=None, wait=None, source=None):
         found, errors = fetch_recent(source, today, fetch=fetch, wait=wait)
         checked = len(found)
         new = [{**e, "url": source["event_url"].format(id=e["id"])} for e in missing_events(found)]
+    packages, package_errors = outdated_packages(fetch_json)
     no_setlist = (Event.objects.filter(class1="ライブ", live__isnull=True, date__lt=today,
                                        date__gte=today - timedelta(days=SETLIST_DAYS))
                   .prefetch_related("artists").order_by("-date", "sort"))
@@ -192,12 +246,14 @@ def build_report(today=None, fetch=None, wait=None, source=None):
         "new_events": new,
         "missing_setlists": [event_row(e) for e in no_setlist],
         "upcoming": [event_row(e) for e in upcoming],
-        "errors": errors,
+        "outdated_packages": packages,
+        "errors": errors + package_errors,
     }
 
 
 # 候補の種類ごとに、同じものかどうかを決める項目（前回の候補と比べて、新しいものに印を付ける）
-KINDS = [("new_events", "id"), ("missing_setlists", "pk"), ("upcoming", "pk")]
+# パッケージは「名前==新しい版」で比べるので、さらに新しい版が出たら、また新しい候補になる
+KINDS = [("new_events", "id"), ("missing_setlists", "pk"), ("upcoming", "pk"), ("outdated_packages", "key")]
 
 
 def mark_new(report, previous):
@@ -215,10 +271,11 @@ def mark_new(report, previous):
 def new_summary(report, admin_url="", limit=5):
     """LINE で送る本文（前回から新しく増えた候補だけ）。"""
     labels = {"new_events": f"{report['source_name']}にあって DB にないイベント",
-              "missing_setlists": "セットリストがない過去のライブ", "upcoming": "これから 1 か月のライブ"}
+              "missing_setlists": "セットリストがない過去のライブ", "upcoming": "これから 1 か月のライブ",
+              "outdated_packages": "新しい版が出たパッケージ（管理画面）"}
     lines = [f"ゆいかおりDB の更新の候補が増えました（{report['today']}）"]
     for kind, _ in KINDS:
-        items = [x for x in report[kind] if x.get("is_new")]
+        items = [x for x in report.get(kind, []) if x.get("is_new")]
         if not items:
             continue
         lines.append(f"■ {labels[kind]}: {len(items)} 件")
@@ -238,6 +295,8 @@ def summary(report, admin_url=""):
         lines.append(f"・{report['source_name']}にあって DB にないイベント: {len(report['new_events'])} 件")
     lines += [f"・セットリストがない過去のライブ: {len(report['missing_setlists'])} 件",
               f"・これから 1 か月のライブ: {len(report['upcoming'])} 件"]
+    if report.get("outdated_packages"):
+        lines.append(f"・新しい版が出たパッケージ（管理画面）: {len(report['outdated_packages'])} 件")
     if report["errors"]:
         lines.append(f"・読めなかったページ: {len(report['errors'])} 件")
     lines.append("詳しくは管理画面のトップを見てください。" + (f"\n{admin_url}" if admin_url else ""))
