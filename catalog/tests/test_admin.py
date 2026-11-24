@@ -44,6 +44,7 @@ class AuthTests(LegacyDataTestCase):
                     self.assertContains(response, tag)
                     text = response.content.decode()
                     self.assertLess(text.index(tag), text.index("</body>"))
+                    self.assertIn("padding-bottom: 72px", text)  # 下の固定ボタンと重ならない余白
 
     def test_anonymous_is_redirected_to_login(self):
         for url in [reverse("admin:index"), reverse("admin:export"), reverse("admin:catalog_live_changelist"),

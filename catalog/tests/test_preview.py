@@ -77,6 +77,7 @@ class PreviewTests(LegacyDataTestCase):
             text = self.client.get(self.url("index.html")).content.decode()
         self.assertIn(tag, text)
         self.assertLess(text.index(tag), text.index("</body>"))
+        self.assertIn("padding-bottom: 72px", text)
 
     def test_data_comes_from_db(self):
         response = self.client.get(self.url("song.json"))
