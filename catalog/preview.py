@@ -99,7 +99,8 @@ def render_page(path, text, admin_url, label="公開中（main）", switch=""):
         text = banner + text
     footer = FOOTER_SCRIPT
     if settings.EXTRA_SCRIPT_URL:
-        footer += f'<script src="{escape(settings.EXTRA_SCRIPT_URL)}" defer></script>'
+        footer += ('<style>body { padding-bottom: 72px; }</style>'
+                   f'<script src="{escape(settings.EXTRA_SCRIPT_URL)}" defer></script>')
     if "</body>" in text:
         text = text.replace("</body>", footer + "</body>", 1)
     else:

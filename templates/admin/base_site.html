@@ -1,3 +1,6 @@
 {% extends "admin/base_site.html" %}
 {% comment %}Django の base_site.html を継いで、設定があればすべてのページの最後にスクリプトを読み込む{% endcomment %}
+{% block extrahead %}{{ block.super }}{% if extra_script_url %}
+<style>/* 読み込んだスクリプトが画面の下に固定のボタンを出しても、最後までスクロールすれば中身と重ならないようにする */
+body { padding-bottom: 72px; }</style>{% endif %}{% endblock %}
 {% block extrabody %}{{ block.super }}{% if extra_script_url %}<script src="{{ extra_script_url }}" defer></script>{% endif %}{% endblock %}
