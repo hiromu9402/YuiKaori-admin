@@ -9,7 +9,7 @@ from catalog import updates
 
 class Command(BaseCommand):
     help = ("データ更新の候補（外部のイベント一覧にあって DB にないイベント、セットリストがない過去のライブ、"
-            "これから 1 か月のライブ）を集めて、管理画面のトップに出す。--notify で LINE にも知らせる。"
+            "これから 1 か月のライブ、新しい版が出たパッケージ）を集めて、管理画面のトップに出す。--notify で LINE にも知らせる。"
             "--notify-new なら、前回から新しい候補が増えたときだけ知らせる")
 
     def add_arguments(self, parser):
@@ -28,6 +28,8 @@ class Command(BaseCommand):
             self.stdout.write(f"セットリストなし: {e['date']} {e['title']}")
         for e in report["upcoming"]:
             self.stdout.write(f"これから: {e['date']} {e['title']}")
+        for p in report["outdated_packages"]:
+            self.stdout.write(f"新しい版: {p['title']}（{p['date']} 公開） {p['url']}")
         if not report["source_enabled"]:
             self.stdout.write(f"外部のイベント一覧の設定（{updates.sources_path()}）がないので、読んでいません")
         for msg in report["errors"]:
