@@ -120,6 +120,16 @@ class TaskTests(AdminTestCase):
                     self.assertNotContains(response, title)
         self.assertContains(self.client.get(url), "未完了（最初の表示）")
 
+    def test_task_id_is_shown_and_searchable(self):
+        task = m.Task.objects.create(title="番号を見るタスク")
+        m.Task.objects.create(title="ほかのタスク")
+        url = reverse("admin:catalog_task_changelist")
+        self.assertContains(self.client.get(url), f'<th class="field-id"><a href="{reverse("admin:catalog_task_change", args=[task.pk])}"')
+        response = self.client.get(url + f"?q={task.pk}")
+        self.assertContains(response, "番号を見るタスク")
+        self.assertNotContains(response, "ほかのタスク")
+        self.assertContains(self.client.get(reverse("admin:catalog_task_change", args=[task.pk])), f'<div class="readonly">{task.pk}</div>')
+
 
 class VerifyRecordTests(AdminTestCase):
     def test_edit_and_filter(self):

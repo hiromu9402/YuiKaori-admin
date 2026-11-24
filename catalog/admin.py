@@ -384,11 +384,12 @@ class TaskVisibilityFilter(admin.SimpleListFilter):
 
 @admin.register(m.Task)
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ["title", "category", "status", "priority", "updated"]
+    list_display = ["id", "title", "category", "status", "priority", "updated"]
+    list_display_links = ["id", "title"]
     list_editable = ["status", "priority"]
     list_filter = [TaskVisibilityFilter, "status", "category", "priority"]
-    search_fields = ["title", "detail"]
-    readonly_fields = ["created", "updated"]
+    search_fields = ["=id", "title", "detail"]
+    readonly_fields = ["id", "created", "updated"]
 
     def get_queryset(self, request):
         # 完了したものは一覧の下に回す
