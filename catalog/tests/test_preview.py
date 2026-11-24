@@ -70,6 +70,14 @@ class PreviewTests(LegacyDataTestCase):
         self.assertLess(text.index('<body class="home">'), text.index("プレビュー（未公開）"))
         self.assertLess(text.index("未公開（プレビュー）"), text.index("</body>"))
 
+    def test_extra_script(self):
+        tag = '<script src="/other/back.js" defer></script>'
+        self.assertNotIn("back.js", self.client.get(self.url("index.html")).content.decode())
+        with override_settings(EXTRA_SCRIPT_URL="/other/back.js"):
+            text = self.client.get(self.url("index.html")).content.decode()
+        self.assertIn(tag, text)
+        self.assertLess(text.index(tag), text.index("</body>"))
+
     def test_data_comes_from_db(self):
         response = self.client.get(self.url("song.json"))
         self.assertEqual(response.status_code, 200)

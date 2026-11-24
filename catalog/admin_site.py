@@ -27,6 +27,9 @@ class YuikaoriAdminSite(admin.AdminSite):
     index_title = "データ管理"
     index_template = "admin/yuikaori_index.html"
 
+    def each_context(self, request):
+        return {**super().each_context(request), "extra_script_url": settings.EXTRA_SCRIPT_URL}
+
     def index(self, request, extra_context=None):
         # manage.py check_updates（毎月 1 日に cron で実行）が集めた候補
         context = {"update_report": load_report(), "site_changes": site_changes(), "dev_preview": preview.dev_preview()}
