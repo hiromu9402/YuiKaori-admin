@@ -30,6 +30,21 @@ class AuthTests(LegacyDataTestCase):
         super().setUpTestData()
         get_user_model().objects.create_superuser("owner", password=PASSWORD)
 
+    def test_extra_script_on_every_page(self):
+        tag = '<script src="/other/back.js" defer></script>'
+        login = reverse("admin:login")
+        self.assertNotIn("back.js", self.client.get(login).content.decode())
+        with override_settings(EXTRA_SCRIPT_URL="/other/back.js"):
+            self.assertContains(self.client.get(login), tag)  # ログイン画面
+            self.client.post(login, {"username": "owner", "password": PASSWORD})
+            for url in [reverse("admin:index"), reverse("admin:export"), reverse("admin:catalog_song_changelist"),
+                        reverse("admin:catalog_live_setlist_text", args=["2025112401"])]:
+                with self.subTest(url=url):
+                    response = self.client.get(url)
+                    self.assertContains(response, tag)
+                    text = response.content.decode()
+                    self.assertLess(text.index(tag), text.index("</body>"))
+
     def test_anonymous_is_redirected_to_login(self):
         for url in [reverse("admin:index"), reverse("admin:export"), reverse("admin:catalog_live_changelist"),
                     reverse("admin:catalog_live_setlist_text", args=["2025112401"])]:

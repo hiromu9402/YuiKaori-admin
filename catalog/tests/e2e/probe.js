@@ -42,7 +42,7 @@ const probes = {
       await stableRows(w.document, '#songTable tr');
       out[tab] = [...w.document.querySelectorAll('#songTable tr')].map(tr => {
         const td = tr.querySelectorAll('td');
-        return [td[0].textContent.trim(), td[4].textContent.trim(), td[5].textContent.trim()];
+        return [td[0].textContent.trim(), td[1].textContent.trim(), td[2].textContent.trim()];
       });
     }
     return out;

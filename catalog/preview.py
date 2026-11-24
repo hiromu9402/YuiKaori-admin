@@ -97,10 +97,13 @@ def render_page(path, text, admin_url, label="公開中（main）", switch=""):
     text, n = re.subn(r"(<body[^>]*>)", lambda m: m.group(1) + banner, text, count=1)
     if not n:
         text = banner + text
+    footer = FOOTER_SCRIPT
+    if settings.EXTRA_SCRIPT_URL:
+        footer += f'<script src="{escape(settings.EXTRA_SCRIPT_URL)}" defer></script>'
     if "</body>" in text:
-        text = text.replace("</body>", FOOTER_SCRIPT + "</body>", 1)
+        text = text.replace("</body>", footer + "</body>", 1)
     else:
-        text += FOOTER_SCRIPT
+        text += footer
     return text
 
 

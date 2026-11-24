@@ -88,7 +88,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -123,6 +123,10 @@ USE_TZ = True
 
 # パスの下で動かすときも CSS/JS の URL にパスが付くよう、絶対パスで指定する
 STATIC_URL = URL_PREFIX.rstrip("/") + "/static/"
+
+# すべてのページ（ログイン画面とプレビューを含む）の </body> の前で読み込むスクリプトの URL。
+# 同じホストで動くほかのアプリと行き来するボタンなどに使う。空なら何も入れない
+EXTRA_SCRIPT_URL = os.environ.get("YUIKAORI_EXTRA_SCRIPT_URL", "")
 STATIC_ROOT = DATA_DIR / "static"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

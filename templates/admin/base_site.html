@@ -1,0 +1,3 @@
+{% extends "admin/base_site.html" %}
+{% comment %}Django の base_site.html を継いで、設定があればすべてのページの最後にスクリプトを読み込む{% endcomment %}
+{% block extrabody %}{{ block.super }}{% if extra_script_url %}<script src="{{ extra_script_url }}" defer></script>{% endif %}{% endblock %}
